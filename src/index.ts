@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import { connectDB } from "./config/dbConfig";
 import appRoutes from './routes/index.route';
 import { sequelize } from "./config/sequalizer";
+import authRoutes from './routes/configuration/login.route';
 import { listRoutes } from "./config/apiDoc";
 import path from 'path';
 import fs from 'fs';
@@ -42,6 +43,11 @@ createUploadFolders();
         console.error('seqalizer initialization failed', err);
     }
 })();
+
+
+
+app.use('/api/configuration/login', authRoutes);
+
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use('/api', appRoutes);
@@ -55,6 +61,11 @@ app.use('/api', (req, res) => {
     }
 });
 
+app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+    console.log('Request Body:', req.body);
+    next();
+});
 const reactBuildPath = path.join(__dirname, '../frontend');
 app.use(express.static(reactBuildPath));
 

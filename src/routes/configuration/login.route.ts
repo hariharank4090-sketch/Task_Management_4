@@ -5,7 +5,7 @@ const router = express.Router();
 
 /**
  * @swagger
- * /api/login:
+ * /api/configuration/login/:
  *   post:
  *     summary: User login
  *     description: Authenticate user and return JWT token
@@ -41,8 +41,6 @@ const router = express.Router();
  *                   $ref: '#/components/schemas/JwtUser'
  *       400:
  *         description: Invalid input
- *       404:
- *         description: Invalid credentials
  *       500:
  *         description: Server error
  */

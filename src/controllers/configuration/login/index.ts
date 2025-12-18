@@ -17,20 +17,55 @@ export const login = async (req: Request, res: Response) => {
 
     try {
 
-        if (!username || !password) return invalidInput(res, 'username and password are required');
+
+        if (!username || !password) {
+            console.log('Missing username or password');
+            return invalidInput(res, 'username and password are required');
+        }
+
 
         const user = await UserMaster.findOne({
+            attributes: ['id', 'userType', 'name', 'uniqueName', 'password', 'branchId'],
             where: {
                 uniqueName: username,
                 isActive: 1
-            }
+            },
+            raw: true
         });
 
-        if (!user) return notFound(res, 'Invalid credentials');
+        console.log('User found:', user ? 'YES' : 'NO');
+
+        if (!user) {
+            console.log('No user found with uniqueName:', username);
+
+
+            const allUsers = await UserMaster.findAll({
+                attributes: ['id', 'uniqueName'],
+                where: { isActive: 1 },
+                limit: 10
+            });
+            console.log('First 10 active users:', allUsers.map(u => u.uniqueName));
+
+            return notFound(res, 'Invalid credentials');
+        }
+
+
+        if (!user.password || user.password === null || user.password === undefined) {
+            console.error('ERROR: User has no password stored');
+            console.error('User object keys:', Object.keys(user));
+            return notFound(res, 'Invalid credentials');
+        }
+
 
         const passwordCheck = await verifyPassword(password, user.password);
-        if (!passwordCheck) return notFound(res, 'Invalid credentials');
 
+
+        if (!passwordCheck) {
+            console.log('Password verification failed');
+            return notFound(res, 'Invalid credentials');
+        }
+
+        console.log('Login successful!');
         const payload: JwtUser = {
             id: user.id,
             userType: user.userType,

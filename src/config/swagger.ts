@@ -11,7 +11,7 @@ const swaggerOptions: Options = {
 
         servers: [
             {
-                url: "http://localhost:5001",
+                url: "http://192.168.3.118:5001",
             },
         ],
 
