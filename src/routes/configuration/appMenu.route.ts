@@ -3,7 +3,12 @@ import express from 'express';
 
 const router = express.Router();
 
+
 router.get('/', appMenu.getMenu);
+
+
+
+
 router.post('/', appMenu.createMenu);
 router.put('/:id', appMenu.updateMenu);
 
