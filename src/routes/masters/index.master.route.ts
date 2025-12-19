@@ -1,5 +1,11 @@
 import express from 'express';
 
+
+//taskType
+
+import taskTypeRoutes from './taskType.routes';
+
+
 //accounting
 // import accoutRoutes from './accounting/accounts.route';
 // import accountGroupRoutes from './accounting/accountGroup.route';
@@ -26,6 +32,9 @@ import express from 'express';
 // import retailerRoutes from './users/retailer.route';
 
 const router = express.Router();
+
+//taskType
+router.use('/taskType', taskTypeRoutes)
 
 // //accounting
 // router.use('/accounts', accoutRoutes);

@@ -1,11 +1,10 @@
-import e, { Request, Response } from 'express';
+import { Request, Response } from 'express';
 import {
     created,
     updated,
     deleted,
     servError,
     notFound,
-    invalidInput,
     sentData
 } from '../../../responseObject';
 import {
@@ -21,13 +20,26 @@ import {
 import { ZodError } from 'zod';
 import { Op } from 'sequelize';
 
-// Enhanced validation middleware function
-const validateWithZod = <T>(schema: any, data: any): { success: boolean; data?: T; errors?: any[] } => {
+const validateWithZod = <T>(schema: any, data: any): {
+    success: boolean;
+    data?: T;
+    errors?: Array<{ field: string; message: string }>
+} => {
     try {
         const validatedData = schema.parse(data);
         return { success: true, data: validatedData };
-    } catch (error) {
-        servError(e, res);
+    } catch (error: any) {
+        if (error instanceof ZodError) {
+            const zodIssues = error.issues || (error as any).errors || [];
+
+            return {
+                success: false,
+                errors: zodIssues.map((err: any) => ({
+                    field: Array.isArray(err.path) ? err.path.join('.') : String(err.path || 'unknown'),
+                    message: err.message || 'Validation error'
+                }))
+            };
+        }
         return {
             success: false,
             errors: [{ field: 'unknown', message: 'Validation failed' }]
@@ -35,10 +47,35 @@ const validateWithZod = <T>(schema: any, data: any): { success: boolean; data?: 
     }
 };
 
+// Helper function to convert date strings to Date objects
+const prepareTaskTypeData = (data: any) => {
+    const preparedData = { ...data };
+
+    // Convert date strings to Date objects
+    if (preparedData.Est_StartTime && typeof preparedData.Est_StartTime === 'string') {
+        preparedData.Est_StartTime = new Date(preparedData.Est_StartTime);
+    }
+
+    if (preparedData.Est_EndTime && typeof preparedData.Est_EndTime === 'string') {
+        preparedData.Est_EndTime = new Date(preparedData.Est_EndTime);
+    }
+
+    return preparedData;
+};
+
 export const getAllTaskTypes = async (req: Request, res: Response) => {
     try {
-        // Validate query parameters
-        const validation = validateWithZod<TaskTypeQueryParams>(taskTypeQuerySchema, req.query);
+        const sortBy = req.query.sortBy as string || 'Task_Type_Id';
+        const sortOrder = req.query.sortOrder as string || 'ASC';
+
+        const queryData = {
+            ...req.query,
+            sortBy,
+            sortOrder
+        };
+
+        const validation = validateWithZod<any>(taskTypeQuerySchema, queryData);
+
         if (!validation.success) {
             return res.status(400).json({
                 success: false,
@@ -49,41 +86,38 @@ export const getAllTaskTypes = async (req: Request, res: Response) => {
 
         const queryParams = validation.data!;
 
-        // Build where clause
         const where: any = {};
 
-        // Filter by TT_Del_Flag
         if (queryParams.ttDelFlag !== 'all') {
             where.TT_Del_Flag = queryParams.ttDelFlag === '1' ? 1 : 0;
         }
 
-        // Filter by Status
         if (queryParams.status !== 'all') {
             where.Status = queryParams.status === '1' ? 1 : 0;
         }
 
-        // Search by Task_Type
         if (queryParams.search) {
             where.Task_Type = {
                 [Op.like]: `%${queryParams.search}%`
             };
         }
 
-        // Filter by Project_Id
         if (queryParams.projectId) {
             where.Project_Id = queryParams.projectId;
         }
 
-        // Filter by Is_Reptative
         if (queryParams.isReptative) {
             where.Is_Reptative = queryParams.isReptative === '1' ? 1 : 0;
         }
+
+        const orderField = queryParams.sortBy || 'Task_Type_Id';
+        const orderDirection = queryParams.sortOrder || 'ASC';
 
         const { rows, count } = await TaskType_Master.findAndCountAll({
             where,
             limit: queryParams.limit,
             offset: (queryParams.page - 1) * queryParams.limit,
-            order: [[queryParams.sortBy, queryParams.sortOrder]]
+            order: [[orderField, orderDirection]]
         });
 
         const totalPages = Math.ceil(count / queryParams.limit);
@@ -148,7 +182,7 @@ export const createTaskType = async (req: Request, res: Response) => {
             });
 
             if (existingTaskType) {
-                return res.status(400).json({
+                return res.status(409).json({
                     success: false,
                     message: 'Task Type with this name already exists',
                     field: 'Task_Type'
@@ -168,12 +202,12 @@ export const createTaskType = async (req: Request, res: Response) => {
 
         const validatedBody = validation.data!;
 
-        // Prepare data with defaults
-        const taskTypeData = {
+        // Prepare data with defaults and convert dates
+        const taskTypeData = prepareTaskTypeData({
             ...validatedBody,
             TT_Del_Flag: 0,
             Status: 1
-        };
+        });
 
         const newTaskType = await TaskType_Master.create(taskTypeData);
 
@@ -222,7 +256,7 @@ export const updateTaskType = async (req: Request, res: Response) => {
             });
 
             if (duplicateTaskType) {
-                return res.status(400).json({
+                return res.status(409).json({
                     success: false,
                     message: 'Another Task Type with this name already exists',
                     field: 'Task_Type'
@@ -242,7 +276,10 @@ export const updateTaskType = async (req: Request, res: Response) => {
 
         const validatedBody = validation.data!;
 
-        await taskType.update(validatedBody);
+        // Prepare data by converting dates
+        const updateData = prepareTaskTypeData(validatedBody);
+
+        await taskType.update(updateData);
 
         updated(res, taskType, 'Task Type updated successfully');
 
@@ -315,22 +352,22 @@ export const getActiveTaskTypes = async (req: Request, res: Response) => {
 // Additional controller for restore functionality
 export const restoreTaskType = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
-
-        if (!id || isNaN(Number(id))) {
+        // Validate ID parameter
+        const validation = validateWithZod<{ id: number }>(taskTypeIdSchema, req.params);
+        if (!validation.success) {
             return res.status(400).json({
                 success: false,
-                message: 'Valid ID parameter is required'
+                message: 'Valid ID parameter is required',
+                errors: validation.errors
             });
         }
 
-        const taskType = await TaskType_Master.findByPk(parseInt(id));
+        const { id } = validation.data!;
+
+        const taskType = await TaskType_Master.findByPk(id);
 
         if (!taskType) {
-            return res.status(404).json({
-                success: false,
-                message: 'Task Type not found'
-            });
+            return notFound(res, 'Task Type not found');
         }
 
         await taskType.update({
@@ -346,6 +383,41 @@ export const restoreTaskType = async (req: Request, res: Response) => {
 
     } catch (error) {
         console.error('Error restoring task type:', error);
+        servError(error as Error, res);
+    }
+};
+
+// Add hardDeleteTaskType controller
+export const hardDeleteTaskType = async (req: Request, res: Response) => {
+    try {
+        // Validate ID parameter
+        const validation = validateWithZod<{ id: number }>(taskTypeIdSchema, req.params);
+        if (!validation.success) {
+            return res.status(400).json({
+                success: false,
+                message: 'Valid ID parameter is required',
+                errors: validation.errors
+            });
+        }
+
+        const { id } = validation.data!;
+
+        const taskType = await TaskType_Master.findByPk(id);
+
+        if (!taskType) {
+            return notFound(res, 'Task Type not found');
+        }
+
+        // Permanently delete
+        await taskType.destroy();
+
+        res.status(200).json({
+            success: true,
+            message: 'Task Type permanently deleted'
+        });
+
+    } catch (error) {
+        console.error('Error hard deleting task type:', error);
         servError(error as Error, res);
     }
 };

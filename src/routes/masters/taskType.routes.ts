@@ -1,23 +1,3 @@
-// import express from 'express';
-// import {
-//     getAllTaskTypes,
-//     getTaskTypeById,
-//     createTaskType,
-//     updateTaskType,
-//     deleteTaskType,
-//     getActiveTaskTypes
-// } from '../../controllers/masters/taskManagement/taskType.controller';
-// import { validateRequest } from '../../middleware/zodValidator';
-// import { taskTypeCreateSchema, taskTypeUpdateSchema } from '../../models/masters/taskType/type.model';
-// import { authenticate, authorize } from '../configuration/login.route';
-// import { paginationMiddleware } from '../middleware/pagination';
-// import { TaskType_Master } from '../../../models/masters/taskType/type.model';
-
-
-
-
-
-
 import express from 'express';
 import {
     getAllTaskTypes,
@@ -25,9 +5,10 @@ import {
     createTaskType,
     updateTaskType,
     deleteTaskType,
-    getActiveTaskTypes
-} from '../controllers/type.controller';
-import { authenticate, authorize } from '../middleware/auth';
+    getActiveTaskTypes,
+    restoreTaskType
+} from '../../controllers/masters/taskManagement/taskType.controller'
+import { authenticate, authorize } from '../../middleware/auth';
 
 const router = express.Router();
 
@@ -50,27 +31,27 @@ const router = express.Router();
  *         Task_Type_Id:
  *           type: integer
  *           readOnly: true
- *           example: 1
+ *       
  *         Task_Type:
  *           type: string
  *           maxLength: 250
- *           example: "MONTHLY REPORT"
+ *          
  *         Is_Reptative:
  *           type: integer
  *           enum: [0, 1]
  *           default: 0
  *           description: "0 = Not Repetitive, 1 = Repetitive"
- *           example: 1
+ *        
  *         Hours_Duration:
  *           type: integer
  *           nullable: true
  *           minimum: 0
- *           example: 8
+ *       
  *         Day_Duration:
  *           type: integer
  *           nullable: true
  *           minimum: 0
- *           example: 1
+ *          
  *         TT_Del_Flag:
  *           type: integer
  *           enum: [0, 1]
@@ -81,7 +62,7 @@ const router = express.Router();
  *           type: integer
  *           nullable: true
  *           minimum: 1
- *           example: 5
+ *       
  *         Est_StartTime:
  *           type: string
  *           format: date-time
@@ -274,7 +255,6 @@ const router = express.Router();
  *       required: false
  *       schema:
  *         type: string
- *       example: "monthly"
  * 
  *     projectIdFilter:
  *       name: projectId
@@ -284,7 +264,6 @@ const router = express.Router();
  *       schema:
  *         type: integer
  *         minimum: 1
- *       example: 5
  * 
  *     statusFilter:
  *       name: status
@@ -295,7 +274,6 @@ const router = express.Router();
  *         type: string
  *         enum: ["0", "1", "all"]
  *         default: "1"
- *       example: "1"
  * 
  *     delFlagFilter:
  *       name: ttDelFlag
@@ -306,7 +284,6 @@ const router = express.Router();
  *         type: string
  *         enum: ["0", "1", "all"]
  *         default: "0"
- *       example: "0"
  * 
  *   securitySchemes:
  *     bearerAuth:
@@ -317,7 +294,7 @@ const router = express.Router();
 
 /**
  * @swagger
- * /api/tasktypes:
+ * /api/masters/tasktype:
  *   get:
  *     summary: Get all task types with pagination and filtering
  *     description: Retrieve a paginated list of task types with optional filtering and search
@@ -336,7 +313,6 @@ const router = express.Router();
  *         schema:
  *           type: string
  *           enum: ["0", "1"]
- *         example: "1"
  *       - name: sortBy
  *         in: query
  *         description: Sort field
@@ -345,7 +321,6 @@ const router = express.Router();
  *           type: string
  *           enum: ["Task_Type_Id", "Task_Type", "Created_At", "Updated_At", "Project_Id"]
  *           default: "Task_Type_Id"
- *         example: "Task_Type"
  *       - name: sortOrder
  *         in: query
  *         description: Sort order
@@ -354,7 +329,6 @@ const router = express.Router();
  *           type: string
  *           enum: ["ASC", "DESC"]
  *           default: "ASC"
- *         example: "ASC"
  *     responses:
  *       200:
  *         description: Successfully retrieved task types
@@ -365,10 +339,8 @@ const router = express.Router();
  *               properties:
  *                 success:
  *                   type: boolean
- *                   example: true
  *                 message:
  *                   type: string
- *                   example: "Task types retrieved successfully"
  *                 data:
  *                   type: array
  *                   items:
@@ -388,7 +360,7 @@ router.get('/', getAllTaskTypes);
 
 /**
  * @swagger
- * /api/tasktypes/active:
+ * /api/masters/tasktype/active:
  *   get:
  *     summary: Get all active task types
  *     description: Retrieve all task types that are active (Status=1) and not deleted (TT_Del_Flag=0)
@@ -405,10 +377,8 @@ router.get('/', getAllTaskTypes);
  *               properties:
  *                 success:
  *                   type: boolean
- *                   example: true
  *                 message:
  *                   type: string
- *                   example: "Active task types retrieved successfully"
  *                 data:
  *                   type: array
  *                   items:
@@ -420,7 +390,7 @@ router.get('/active', getActiveTaskTypes);
 
 /**
  * @swagger
- * /api/tasktypes/{id}:
+ * /api/masters/tasktype/{id}:
  *   get:
  *     summary: Get task type by ID
  *     description: Retrieve a specific task type by its ID
@@ -437,10 +407,8 @@ router.get('/active', getActiveTaskTypes);
  *               properties:
  *                 success:
  *                   type: boolean
- *                   example: true
  *                 message:
  *                   type: string
- *                   example: "Task type retrieved successfully"
  *                 data:
  *                   $ref: '#/components/schemas/TaskType'
  *       400:
@@ -458,10 +426,10 @@ router.get('/active', getActiveTaskTypes);
  *               properties:
  *                 success:
  *                   type: boolean
- *                   example: false
+ *               
  *                 message:
  *                   type: string
- *                   example: "Task Type not found"
+ *                
  *       500:
  *         description: Internal server error
  */
@@ -469,7 +437,7 @@ router.get('/:id', getTaskTypeById);
 
 /**
  * @swagger
- * /api/tasktypes:
+ * /api/masters/tasktype:
  *   post:
  *     summary: Create a new task type
  *     description: Create a new task type record
@@ -481,28 +449,7 @@ router.get('/:id', getTaskTypeById);
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/TaskTypeCreate'
- *           examples:
- *             basic:
- *               summary: Basic task type
- *               value:
- *                 Task_Type: "MONTHLY REPORT"
- *                 Is_Reptative: 1
- *                 Project_Id: 5
- *             detailed:
- *               summary: Detailed task type
- *               value:
- *                 Task_Type: "QUARTERLY AUDIT"
- *                 Is_Reptative: 1
- *                 Hours_Duration: 24
- *                 Day_Duration: 3
- *                 Project_Id: 8
- *                 Est_StartTime: "2024-03-01T09:00:00Z"
- *                 Est_EndTime: "2024-03-01T17:00:00Z"
- *             minimal:
- *               summary: Minimal task type
- *               value:
- *                 Task_Type: "ONE TIME TASK"
+ *             $ref: '#/components/schemas/TaskTypeCreate'      
  *     responses:
  *       201:
  *         description: Task type created successfully
@@ -513,10 +460,10 @@ router.get('/:id', getTaskTypeById);
  *               properties:
  *                 success:
  *                   type: boolean
- *                   example: true
+ *                 
  *                 message:
  *                   type: string
- *                   example: "Task Type created successfully"
+ *                
  *                 data:
  *                   $ref: '#/components/schemas/TaskType'
  *       400:
@@ -534,10 +481,10 @@ router.get('/:id', getTaskTypeById);
  *               properties:
  *                 success:
  *                   type: boolean
- *                   example: false
+ *                
  *                 message:
  *                   type: string
- *                   example: "No token provided"
+ *                 
  *       403:
  *         description: Forbidden - Insufficient permissions
  *         content:
@@ -547,10 +494,10 @@ router.get('/:id', getTaskTypeById);
  *               properties:
  *                 success:
  *                   type: boolean
- *                   example: false
+ *              
  *                 message:
  *                   type: string
- *                   example: "Insufficient permissions"
+ *                 
  *       409:
  *         description: Conflict - Task type already exists
  *         content:
@@ -560,22 +507,22 @@ router.get('/:id', getTaskTypeById);
  *               properties:
  *                 success:
  *                   type: boolean
- *                   example: false
+ *                 
  *                 message:
  *                   type: string
- *                   example: "Task Type with this name already exists"
+ *                  
  *       500:
  *         description: Internal server error
  */
 router.post('/',
     authenticate,
-    authorize(['admin', 'manager']),
+    authorize([1, 2]), // Assuming 1 = Admin, 2 = Manager (adjust based on your userType IDs)
     createTaskType
 );
 
 /**
  * @swagger
- * /api/tasktypes/{id}:
+ * /api/masters/tasktype/{id}:
  *   put:
  *     summary: Update a task type
  *     description: Update an existing task type by ID
@@ -590,23 +537,6 @@ router.post('/',
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/TaskTypeUpdate'
- *           examples:
- *             updateName:
- *               summary: Update task type name
- *               value:
- *                 Task_Type: "UPDATED TASK NAME"
- *             updateStatus:
- *               summary: Update task type status
- *               value:
- *                 Status: 0
- *             comprehensive:
- *               summary: Comprehensive update
- *               value:
- *                 Task_Type: "UPDATED TASK NAME"
- *                 Is_Reptative: 0
- *                 Hours_Duration: 16
- *                 Project_Id: 7
- *                 Status: 1
  *     responses:
  *       200:
  *         description: Task type updated successfully
@@ -617,10 +547,10 @@ router.post('/',
  *               properties:
  *                 success:
  *                   type: boolean
- *                   example: true
+ *             
  *                 message:
  *                   type: string
- *                   example: "Task Type updated successfully"
+ *                  
  *                 data:
  *                   $ref: '#/components/schemas/TaskType'
  *       400:
@@ -642,10 +572,10 @@ router.post('/',
  *               properties:
  *                 success:
  *                   type: boolean
- *                   example: false
+ *                
  *                 message:
  *                   type: string
- *                   example: "Task Type not found"
+ *                 
  *       409:
  *         description: Conflict - Task type name already exists
  *         content:
@@ -655,22 +585,22 @@ router.post('/',
  *               properties:
  *                 success:
  *                   type: boolean
- *                   example: false
+ *                
  *                 message:
  *                   type: string
- *                   example: "Another Task Type with this name already exists"
+ *             
  *       500:
  *         description: Internal server error
  */
 router.put('/:id',
     authenticate,
-    authorize(['admin', 'manager']),
+    authorize([1, 2]), // Admin and Manager can update
     updateTaskType
 );
 
 /**
  * @swagger
- * /api/tasktypes/{id}:
+ * /api/masters/tasktype/{id}:
  *   delete:
  *     summary: Delete a task type (soft delete)
  *     description: Soft delete a task type by setting TT_Del_Flag to 1 and Status to 0
@@ -689,10 +619,10 @@ router.put('/:id',
  *               properties:
  *                 success:
  *                   type: boolean
- *                   example: true
+ *                
  *                 message:
  *                   type: string
- *                   example: "Task Type deleted successfully"
+ *              
  *       400:
  *         description: Invalid ID parameter
  *         content:
@@ -710,13 +640,13 @@ router.put('/:id',
  */
 router.delete('/:id',
     authenticate,
-    authorize(['admin']),
+    authorize([1]), // Only Admin can delete
     deleteTaskType
 );
 
 /**
  * @swagger
- * /api/tasktypes/{id}/restore:
+ * /api/masters/tasktype/{id}/restore:
  *   patch:
  *     summary: Restore a deleted task type
  *     description: Restore a soft-deleted task type by setting TT_Del_Flag to 0 and Status to 1
@@ -735,10 +665,10 @@ router.delete('/:id',
  *               properties:
  *                 success:
  *                   type: boolean
- *                   example: true
+ *                 
  *                 message:
  *                   type: string
- *                   example: "Task Type restored successfully"
+ *             
  *                 data:
  *                   $ref: '#/components/schemas/TaskType'
  *       400:
@@ -754,127 +684,10 @@ router.delete('/:id',
  */
 router.patch('/:id/restore',
     authenticate,
-    authorize(['admin']),
-    async (req: express.Request, res: express.Response) => {
-        try {
-            const { id } = req.params;
-
-            if (!id || isNaN(Number(id))) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Valid ID parameter is required'
-                });
-            }
-
-            // Import TaskType_Master here or move to controller
-            const { TaskType_Master } = require('../../../models/masters/taskType/type.model');
-            const taskType = await TaskType_Master.findByPk(parseInt(id));
-
-            if (!taskType) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Task Type not found'
-                });
-            }
-
-            await taskType.update({
-                TT_Del_Flag: 0,
-                Status: 1,
-                Updated_At: new Date()
-            });
-
-            res.status(200).json({
-                success: true,
-                message: 'Task Type restored successfully',
-                data: taskType
-            });
-
-        } catch (error) {
-            console.error('Error restoring task type:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Internal server error'
-            });
-        }
-    }
+    authorize([1]), // Only Admin can restore
+    restoreTaskType // Use controller function instead of inline
 );
 
-/**
- * @swagger
- * /api/tasktypes/{id}/hard-delete:
- *   delete:
- *     summary: Permanently delete a task type
- *     description: Permanently delete a task type from the database (use with caution)
- *     tags: [Task Types]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - $ref: '#/components/parameters/taskTypeId'
- *     responses:
- *       200:
- *         description: Task type permanently deleted
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "Task Type permanently deleted"
- *       400:
- *         description: Invalid ID parameter
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden - Insufficient permissions
- *       404:
- *         description: Task type not found
- *       500:
- *         description: Internal server error
- */
-router.delete('/:id/hard-delete',
-    authenticate,
-    authorize(['admin']),
-    async (req: express.Request, res: express.Response) => {
-        try {
-            const { id } = req.params;
 
-            if (!id || isNaN(Number(id))) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Valid ID parameter is required'
-                });
-            }
-
-            // Import TaskType_Master here or move to controller
-            const { TaskType_Master } = require('../../../models/masters/taskType/type.model');
-            const taskType = await TaskType_Master.findByPk(parseInt(id));
-
-            if (!taskType) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Task Type not found'
-                });
-            }
-
-            await taskType.destroy();
-
-            res.status(200).json({
-                success: true,
-                message: 'Task Type permanently deleted'
-            });
-
-        } catch (error) {
-            console.error('Error hard deleting task type:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Internal server error'
-            });
-        }
-    }
-);
 
 export default router;
