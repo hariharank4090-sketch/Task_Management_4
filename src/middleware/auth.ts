@@ -47,15 +47,16 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
         const decoded = jwt.verify(token, JWT_SECRET) as {
             id: number;
             uniqueName: string;
-            userType: number;
-            [key: string]: any
+            userType: number;  // Should be number
+            name: string;
+            branchId: number;
         };
 
         // Fetch user from database to ensure they still exist
         const user = await UserMaster.findOne({
             where: {
                 id: decoded.id,
-                isActive: 1 // Only active users
+                isActive: 1
             },
             attributes: ['id', 'uniqueName', 'name', 'userType', 'branchId']
         });
@@ -67,12 +68,12 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
             });
         }
 
-        // Attach user to request object
+        // Attach user to request object - ensure userType is number
         req.user = {
             id: user.id,
             uniqueName: user.uniqueName,
             name: user.name,
-            userType: user.userType,
+            userType: Number(user.userType), // Convert to number
             branchId: user.branchId
         };
 
@@ -121,8 +122,11 @@ export const authorize = (allowedUserTypes: number[] | number) => {
                 ? allowedUserTypes
                 : [allowedUserTypes];
 
+            // Convert req.user.userType to number (it comes as string from JWT)
+            const userType = Number(req.user.userType);
+
             // Check if user has required userType
-            if (!requiredUserTypes.includes(req.user.userType)) {
+            if (!requiredUserTypes.includes(userType)) {
                 return res.status(403).json({
                     success: false,
                     message: 'Access denied. Insufficient permissions.'
@@ -143,12 +147,12 @@ export const authorize = (allowedUserTypes: number[] | number) => {
 /**
  * Generate JWT token for user
  */
-export const generateToken = (user: UserMaster): string => {
+export const generateToken = (user: any): string => {
     const payload = {
         id: user.id,
         uniqueName: user.uniqueName,
         name: user.name,
-        userType: user.userType,
+        userType: Number(user.userType),
         branchId: user.branchId
     };
 

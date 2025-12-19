@@ -516,7 +516,7 @@ router.get('/:id', getTaskTypeById);
  */
 router.post('/',
     authenticate,
-    authorize([1, 2]), // Assuming 1 = Admin, 2 = Manager (adjust based on your userType IDs)
+    authorize([1, 2]),
     createTaskType
 );
 
