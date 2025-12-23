@@ -35,49 +35,110 @@ export class TaskType_Master
     declare Status: number | null;
 }
 
-// Zod schemas
+// CORRECTED Zod schemas
 export const taskTypeCreateSchema = z.object({
-    Task_Type: z.string().min(1, 'Task Type is required').max(250, 'Task Type cannot exceed 250 characters'),
-    Is_Reptative: z.number().int().min(0).max(1).default(0),
-    Hours_Duration: z.number().int().min(0).nullable().optional(),
-    Day_Duration: z.number().int().min(0).nullable().optional(),
-    Project_Id: z.number().int().min(1).nullable().optional(),
-    Est_StartTime: z.string().datetime().nullable().optional(),
-    Est_EndTime: z.string().datetime().nullable().optional()
+    Task_Type: z.string()
+        .min(1, 'Task Type is required')
+        .max(250, 'Task Type cannot exceed 250 characters')
+        .trim(),
+    Is_Reptative: z.coerce.number()
+        .int()
+        .min(0)
+        .max(1)
+        .default(0),
+    Hours_Duration: z.coerce.number()
+        .int()
+        .min(0)
+        .nullable()
+        .optional()
+        .default(null),
+    Day_Duration: z.coerce.number()
+        .int()
+        .min(0)
+        .nullable()
+        .optional()
+        .default(null),
+    Project_Id: z.coerce.number()
+        .int()
+        .min(1)
+        .nullable()
+        .optional()
+        .default(null),
+  
+  
 });
 
 export const taskTypeUpdateSchema = z.object({
-    Task_Type: z.string().max(250, 'Task Type cannot exceed 250 characters').optional(),
-    Is_Reptative: z.number().int().min(0).max(1).optional(),
-    Hours_Duration: z.number().int().min(0).nullable().optional(),
-    Day_Duration: z.number().int().min(0).nullable().optional(),
-    Project_Id: z.number().int().min(1).nullable().optional(),
-    Est_StartTime: z.string().datetime().nullable().optional(),
-    Est_EndTime: z.string().datetime().nullable().optional(),
-    Status: z.number().int().min(0).max(1).optional()
+    Task_Type: z.string()
+        .max(250, 'Task Type cannot exceed 250 characters')
+        .trim()
+        .optional(),
+    Is_Reptative: z.coerce.number()
+        .int()
+        .min(0)
+        .max(1)
+        .optional(),
+    Hours_Duration: z.coerce.number()
+        .int()
+        .min(0)
+        .nullable()
+        .optional(),
+    Day_Duration: z.coerce.number()
+        .int()
+        .min(0)
+        .nullable()
+        .optional(),
+    Project_Id: z.coerce.number()
+        .int()
+        .min(1)
+        .nullable()
+        .optional(),
+   
+    Status: z.coerce.number()
+        .int()
+        .min(0)
+        .max(1)
+        .optional()
 });
 
 export const taskTypeQuerySchema = z.object({
-    page: z.coerce.number().int().positive().default(1),
-    limit: z.coerce.number().int().min(1).max(100).default(20),
+    page: z.coerce.number()
+        .int()
+        .positive()
+        .default(1),
+    limit: z.coerce.number()
+        .int()
+        .min(1)
+        .max(100)
+        .default(20),
     search: z.string().optional(),
-    projectId: z.coerce.number().int().positive().optional(),
-    status: z.enum(['0', '1', 'all']).default('1'),
-    ttDelFlag: z.enum(['0', '1', 'all']).default('0'),
-    isReptative: z.enum(['0', '1']).optional(),
-    sortBy: z.enum(['Task_Type_Id', 'Task_Type', 'Project_Id']).default('Task_Type_Id'),
-    sortOrder: z.enum(['ASC', 'DESC']).default('ASC')
+    projectId: z.coerce.number()
+        .int()
+        .positive()
+        .optional(),
+    status: z.enum(['0', '1', 'all'])
+        .default('1'),
+    ttDelFlag: z.enum(['0', '1', 'all'])
+        .default('0'),
+    isReptative: z.enum(['0', '1'])
+        .optional(),
+    sortBy: z.enum(['Task_Type_Id', 'Task_Type', 'Project_Id'])
+        .default('Task_Type_Id'),
+    sortOrder: z.enum(['ASC', 'DESC'])
+        .default('ASC')
 });
 
 export const taskTypeIdSchema = z.object({
-    id: z.coerce.number().int().positive('Valid ID is required')
+    id: z.coerce.number()
+        .int()
+        .positive('Valid ID is required')
 });
 
 export type TaskTypeCreateInput = z.infer<typeof taskTypeCreateSchema>;
 export type TaskTypeUpdateInput = z.infer<typeof taskTypeUpdateSchema>;
 export type TaskTypeQueryParams = z.infer<typeof taskTypeQuerySchema>;
 
-// Initialize the model with CORRECT TABLE NAME
+// Initialize the model
 TaskType_Master.init(
     {
         Task_Type_Id: {
@@ -89,34 +150,54 @@ TaskType_Master.init(
         Task_Type: {
             type: DataTypes.STRING(250),
             allowNull: false,
-            field: 'Task_Type'
+            field: 'Task_Type',
+            validate: {
+                notEmpty: true
+            }
         },
         Is_Reptative: {
             type: DataTypes.INTEGER,
             allowNull: true,
             defaultValue: 0,
-            field: 'Is_Reptative'
+            field: 'Is_Reptative',
+            validate: {
+                min: 0,
+                max: 1
+            }
         },
         Hours_Duration: {
             type: DataTypes.INTEGER,
             allowNull: true,
-            field: 'Hours_Duration'
+            field: 'Hours_Duration',
+            validate: {
+                min: 0
+            }
         },
         Day_Duration: {
             type: DataTypes.INTEGER,
             allowNull: true,
-            field: 'Day_Duration'
+            field: 'Day_Duration',
+            validate: {
+                min: 0
+            }
         },
         TT_Del_Flag: {
             type: DataTypes.INTEGER,
             allowNull: true,
             defaultValue: 0,
-            field: 'TT_Del_Flag'
+            field: 'TT_Del_Flag',
+            validate: {
+                min: 0,
+                max: 1
+            }
         },
         Project_Id: {
             type: DataTypes.INTEGER,
             allowNull: true,
-            field: 'Project_Id'
+            field: 'Project_Id',
+            validate: {
+                min: 1
+            }
         },
         Est_StartTime: {
             type: DataTypes.DATE,
@@ -132,17 +213,24 @@ TaskType_Master.init(
             type: DataTypes.INTEGER,
             allowNull: true,
             defaultValue: 1,
-            field: 'Status'
+            field: 'Status',
+            validate: {
+                min: 0,
+                max: 1
+            }
         }
-
     },
     {
         sequelize,
-        tableName: 'tbl_Task_Type', // THIS IS THE IMPORTANT CHANGE
+        tableName: 'tbl_Task_Type',
         modelName: modelName,
-        timestamps: false, // Since you have Created_At and Updated_At columns
+        timestamps: false,
         freezeTableName: true,
         defaultScope: {
+            where: {
+                TT_Del_Flag: 0,
+                Status: 1
+            },
             attributes: { exclude: [] }
         }
     }
@@ -159,4 +247,4 @@ export const taskTypeAccKey = {
     Est_StartTime: `${modelName}.Est_StartTime`,
     Est_EndTime: `${modelName}.Est_EndTime`,
     Status: `${modelName}.Status`
-}
+};

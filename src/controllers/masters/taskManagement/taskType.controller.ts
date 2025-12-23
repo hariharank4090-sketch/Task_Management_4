@@ -172,16 +172,20 @@ export const getTaskTypeById = async (req: Request, res: Response) => {
 
 export const createTaskType = async (req: Request, res: Response) => {
     try {
-        // Check if Task Type already exists
-        if (req.body.Task_Type) {
-            const existingTaskType = await TaskType_Master.findOne({
+        const normalizedBody = {
+            ...req.body,
+            Task_Type: req.body.Task_Type?.trim()
+        };
+
+        if (normalizedBody.Task_Type) {
+            const existing = await TaskType_Master.findOne({
                 where: {
-                    Task_Type: req.body.Task_Type.trim(),
+                    Task_Type: normalizedBody.Task_Type,
                     TT_Del_Flag: 0
                 }
             });
 
-            if (existingTaskType) {
+            if (existing) {
                 return res.status(409).json({
                     success: false,
                     message: 'Task Type with this name already exists',
@@ -190,8 +194,34 @@ export const createTaskType = async (req: Request, res: Response) => {
             }
         }
 
-        // Validate request body
-        const validation = validateWithZod<TaskTypeCreateInput>(taskTypeCreateSchema, req.body);
+        // Get the maximum Task_Type_Id and add 1 for the new record
+        const maxIdResult = await TaskType_Master.findOne({
+            attributes: [
+                [TaskType_Master.sequelize!.fn('MAX', TaskType_Master.sequelize!.col('Task_Type_Id')), 'maxId']
+            ],
+            raw: true
+        });
+
+        // const nextId = (maxIdResult || 0) + 1;
+      const nextId=(maxIdResult && (maxIdResult as any).maxId ? (maxIdResult as any).maxId : 0) + 1;
+        const preparedData = {
+            ...normalizedBody,
+            Task_Type_Id: nextId, // Manually set the ID
+            TT_Del_Flag: 0,
+            Status: 1,
+            Est_StartTime: normalizedBody.Est_StartTime
+                ? new Date(normalizedBody.Est_StartTime)
+                : null,
+            Est_EndTime: normalizedBody.Est_EndTime
+                ? new Date(normalizedBody.Est_EndTime)
+                : null
+        };
+
+        const validation = validateWithZod<TaskTypeCreateInput>(
+            taskTypeCreateSchema,
+            preparedData
+        );
+
         if (!validation.success) {
             return res.status(400).json({
                 success: false,
@@ -200,22 +230,14 @@ export const createTaskType = async (req: Request, res: Response) => {
             });
         }
 
-        const validatedBody = validation.data!;
+        // Create with manual ID
+        const taskType = await TaskType_Master.create(validation.data);
 
-        // Prepare data with defaults and convert dates
-        const taskTypeData = prepareTaskTypeData({
-            ...validatedBody,
-            TT_Del_Flag: 0,
-            Status: 1
-        });
+        return created(res, taskType, 'Task Type created successfully');
 
-        const newTaskType = await TaskType_Master.create(taskTypeData);
-
-        created(res, newTaskType, 'Task Type created successfully');
-
-    } catch (e) {
-        console.error('Error creating task type:', e);
-        servError(e, res);
+    } catch (error) {
+        console.error('Error creating task type:', error);
+        return servError(error, res);
     }
 };
 

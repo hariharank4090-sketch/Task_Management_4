@@ -4,7 +4,7 @@ import express from 'express';
 //taskType
 
 import taskTypeRoutes from './taskType.routes';
-
+import projectRoutes from './project.routes';       
 
 //accounting
 // import accoutRoutes from './accounting/accounts.route';
@@ -35,6 +35,8 @@ const router = express.Router();
 
 //taskType
 router.use('/taskType', taskTypeRoutes)
+
+router.use('/project',projectRoutes)
 
 // //accounting
 // router.use('/accounts', accoutRoutes);
