@@ -84,7 +84,7 @@ export const getAllProjects = async (req: Request, res: Response) => {
             sortOrder
         };
 
-        const validation = validateWithZod<any>(projectMasterQuerySchema, queryData);
+        const validation = validateWithZod<any>(taskTypeQuerySchema, queryData);
 
         if (!validation.success) {
             return res.status(400).json({
@@ -98,32 +98,32 @@ export const getAllProjects = async (req: Request, res: Response) => {
 
         const where: any = {};
 
-        if (queryParams.isActive !== 'all') {
-            where.IsActive = queryParams.isActive === '1' ? 1 : 0;
+        if (queryParams.ttDelFlag !== 'all') {
+            where.TT_Del_Flag = queryParams.ttDelFlag === '1' ? 1 : 0;
+        }
+
+        if (queryParams.status !== 'all') {
+            where.Status = queryParams.status === '1' ? 1 : 0;
         }
 
         if (queryParams.search) {
-            where.Project_Name = {
+            where.Task_Type = {
                 [Op.like]: `%${queryParams.search}%`
             };
         }
 
-        if (queryParams.companyId) {
-            where.Company_Id = queryParams.companyId;
+        if (queryParams.projectId) {
+            where.Project_Id = queryParams.projectId;
         }
 
-        if (queryParams.projectHead) {
-            where.Project_Head = queryParams.projectHead;
+        if (queryParams.isReptative) {
+            where.Is_Reptative = queryParams.isReptative === '1' ? 1 : 0;
         }
 
-        if (queryParams.projectStatus !== 'all') {
-            where.Project_Status = queryParams.projectStatus === '1' ? 1 : 0;
-        }
-
-        const orderField = queryParams.sortBy || 'Project_Id';
+        const orderField = queryParams.sortBy || 'Task_Type_Id';
         const orderDirection = queryParams.sortOrder || 'ASC';
 
-        const { rows, count } = await Project_Master.findAndCountAll({
+        const { rows, count } = await TaskType_Master.findAndCountAll({
             where,
             limit: queryParams.limit,
             offset: (queryParams.page - 1) * queryParams.limit,
@@ -142,7 +142,7 @@ export const getAllProjects = async (req: Request, res: Response) => {
         });
 
     } catch (err) {
-        console.error('Error fetching projects:', err);
+        console.error('Error fetching task types:', err);
         servError(err, res);
     }
 };

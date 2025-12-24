@@ -278,10 +278,9 @@ const router = express.Router();
  *       scheme: bearer
  *       bearerFormat: JWT
  */
-
 /**
  * @swagger
- * /api/masters/projects:
+ * /api/masters/project:
  *   get:
  *     summary: Get all projects with pagination and filtering
  *     description: Retrieve a paginated list of projects with optional filtering and search
@@ -319,27 +318,8 @@ const router = express.Router();
  *     responses:
  *       200:
  *         description: Successfully retrieved projects
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Project'
- *                 pagination:
- *                   $ref: '#/components/schemas/Pagination'
  *       400:
  *         description: Invalid query parameters
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  *       500:
  *         description: Internal server error
  */
