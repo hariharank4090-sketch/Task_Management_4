@@ -319,7 +319,7 @@ router.get('/', getAllProjects);
 
 /**
  * @swagger
- * /api/masters/projects/active:
+ * /api/masters/project/active:
  *   get:
  *     summary: Get all active projects
  *     description: Retrieve all projects that are active (IsActive=1)
@@ -349,7 +349,7 @@ router.get('/active', getActiveProjects);
 
 /**
  * @swagger
- * /api/masters/projects/{id}:
+ * /api/masters/project/{id}:
  *   get:
  *     summary: Get project by ID
  *     description: Retrieve a specific project by its ID
@@ -394,7 +394,7 @@ router.get('/:id', getProjectById);
 
 /**
  * @swagger
- * /api/masters/projects:
+ * /api/masters/project:
  *   post:
  *     summary: Create a new project
  *     description: Create a new project record
@@ -444,7 +444,7 @@ router.post('/',
 
 /**
  * @swagger
- * /api/masters/projects/{id}:
+ * /api/masters/project/{id}:
  *   put:
  *     summary: Update a project
  *     description: Update an existing project by ID
@@ -498,7 +498,7 @@ router.put('/:id',
 
 /**
  * @swagger
- * /api/masters/projects/{id}:
+ * /api/masters/project/{id}:
  *   delete:
  *     summary: Delete a project (soft delete)
  *     description: Soft delete a project by setting IsActive to 0
@@ -542,7 +542,7 @@ router.delete('/:id',
 
 /**
  * @swagger
- * /api/masters/projects/{id}/restore:
+ * /api/masters/project/{id}/restore:
  *   patch:
  *     summary: Restore a deleted project
  *     description: Restore a soft-deleted project by setting IsActive to 1
