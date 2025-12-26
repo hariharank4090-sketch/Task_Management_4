@@ -68,15 +68,7 @@ const router = express.Router();
  *           type: string
  *           format: date-time
  *           readOnly: true
- *           example: "2024-01-01T12:00:00Z"
- *         Updated_By:
- *           type: integer
- *           nullable: true
- *         Updated_Date:
- *           type: string
- *           format: date-time
- *           nullable: true
- *           example: "2024-01-01T12:00:00Z"
+ *           example: "2024-01-01T12:00:00Z"    
  *         IsActive:
  *           type: integer
  *           enum: [0, 1]

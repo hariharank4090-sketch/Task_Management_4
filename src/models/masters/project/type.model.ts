@@ -36,8 +36,6 @@ export class Project_Master
     declare Project_Status: number | null;
     declare Entry_By: number | null;
     declare Entry_Date: Date | null;
-    declare Updated_By: number | null;
-    declare Updated_Date: Date | null;
     declare IsActive: number | null;
 }
 
@@ -201,16 +199,6 @@ Project_Master.init(
             field: 'Entry_Date',
             defaultValue: DataTypes.NOW
         },
-        Updated_By: {
-            type: DataTypes.INTEGER,
-            allowNull: true,
-            field: 'Updated_By'
-        },
-        Updated_Date: {
-            type: DataTypes.DATE,
-            allowNull: true,
-            field: 'Updated_Date'
-        },
         IsActive: {
             type: DataTypes.INTEGER,
             allowNull: true,
@@ -247,7 +235,5 @@ export const projectMasterAccKey = {
     Project_Status: `${modelName}.Project_Status`,
     Entry_By: `${modelName}.Entry_By`,
     Entry_Date: `${modelName}.Entry_Date`,
-    Updated_By: `${modelName}.Updated_By`,
-    Updated_Date: `${modelName}.Updated_Date`,
     IsActive: `${modelName}.IsActive`
 };

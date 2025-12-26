@@ -19,6 +19,7 @@ import {
 } from '../../../models/masters/taskType/type.model';
 import { ZodError } from 'zod';
 import { Op } from 'sequelize';
+import { Project_Master } from '../../../models/masters/project/type.model';
 
 const validateWithZod = <T>(schema: any, data: any): {
     success: boolean;
@@ -86,15 +87,10 @@ export const getAllTaskTypes = async (req: Request, res: Response) => {
 
         const queryParams = validation.data!;
 
-        const where: any = {};
-
-        if (queryParams.ttDelFlag !== 'all') {
-            where.TT_Del_Flag = queryParams.ttDelFlag === '1' ? 1 : 0;
-        }
-
-        if (queryParams.status !== 'all') {
-            where.Status = queryParams.status === '1' ? 1 : 0;
-        }
+        const where: any = {
+            TT_Del_Flag: queryParams.ttDelFlag === '1' ? 1 : 0,
+            Status: queryParams.status === '1' ? 1 : 0
+        };
 
         if (queryParams.search) {
             where.Task_Type = {
@@ -120,9 +116,61 @@ export const getAllTaskTypes = async (req: Request, res: Response) => {
             order: [[orderField, orderDirection]]
         });
 
+       
+        const projectIds = rows
+            .map(row => row.Project_Id)
+            .filter((id): id is number => id !== null && id !== undefined)
+            .filter((id, index, self) => self.indexOf(id) === index);
+
+      
+        const projectsMap = new Map<string | number, string>();
+        if (projectIds.length > 0) {
+            const projects = await Project_Master.findAll({
+                where: {
+                    Project_Id: projectIds
+                },
+                attributes: ['Project_Id', 'Project_Name']
+            });
+            
+          
+            projects.forEach(project => {
+                const projectId = project.Project_Id;
+                const projectName = project.Project_Name;
+                
+           
+                const numId = Number(projectId);
+                if (!isNaN(numId)) {
+                    projectsMap.set(numId, projectName);
+                    projectsMap.set(projectId.toString(), projectName);
+                } else {
+                    projectsMap.set(projectId, projectName);
+                }
+            });
+        }
+
+      
+        const formattedRows = rows.map(row => {
+            const taskType = row.toJSON();
+            const projectId = taskType.Project_Id;
+            
+      
+            let projectName: string | null = null;
+            if (projectId) {
+         
+                projectName = projectsMap.get(Number(projectId)) || 
+                             projectsMap.get(projectId.toString()) || 
+                             null;
+            }
+            
+            return {
+                ...taskType,
+                Project_Name: projectName
+            };
+        });
+
         const totalPages = Math.ceil(count / queryParams.limit);
 
-        return sentData(res, rows, {
+        return sentData(res, formattedRows, {
             totalRecords: count,
             currentPage: queryParams.page,
             totalPages,
@@ -137,10 +185,15 @@ export const getAllTaskTypes = async (req: Request, res: Response) => {
     }
 };
 
+
 export const getTaskTypeById = async (req: Request, res: Response) => {
     try {
-        // Validate ID parameter
-        const validation = validateWithZod<{ id: number }>(taskTypeIdSchema, req.params);
+        // Validate ID
+        const validation = validateWithZod<{ id: number }>(
+            taskTypeIdSchema,
+            req.params
+        );
+
         if (!validation.success) {
             return res.status(400).json({
                 success: false,
@@ -151,24 +204,55 @@ export const getTaskTypeById = async (req: Request, res: Response) => {
 
         const { id } = validation.data!;
 
-        const taskType = await TaskType_Master.findByPk(id);
+        // 1️⃣ Fetch task type
+        const taskType = await TaskType_Master.findOne({
+            where: {
+                Task_Type_Id: id,
+                TT_Del_Flag: 0
+            }
+        });
 
         if (!taskType) {
             return notFound(res, 'Task Type not found');
         }
 
-        // Check if deleted
-        if (taskType.TT_Del_Flag === 1) {
-            return notFound(res, 'Task Type has been deleted');
+        // 2️⃣ Collect projectIds (single record → array)
+        const projectIds = taskType.Project_Id
+            ? [taskType.Project_Id]
+            : [];
+
+        // 3️⃣ Fetch projects
+        let projectName: string | null = null;
+
+        if (projectIds.length > 0) {
+            const project = await Project_Master.findOne({
+                where: {
+                    Project_Id: projectIds[0]
+                },
+                attributes: ['Project_Id', 'Project_Name']
+            });
+
+            projectName = project ? project.Project_Name : null;
         }
 
-        sentData(res, taskType as any);
+        // 4️⃣ Final formatted response
+        const formattedData = {
+            ...taskType.toJSON(),
+            Project_Name: projectName
+        };
+
+        return res.status(200).json({
+            success: true,
+            message: 'Task Type fetched successfully',
+            data: formattedData
+        });
 
     } catch (e) {
         console.error('Error fetching task type by ID:', e);
         servError(e, res);
     }
 };
+
 
 export const createTaskType = async (req: Request, res: Response) => {
     try {

@@ -49,11 +49,11 @@ const validateWithZod = <T>(schema: any, data: any): {
     }
 };
 
-// Helper function to convert date strings to Date objects
+
 const prepareProjectData = (data: any) => {
     const preparedData = { ...data };
 
-    // Convert date strings to Date objects
+    
     if (preparedData.Est_Start_Dt && typeof preparedData.Est_Start_Dt === 'string') {
         preparedData.Est_Start_Dt = new Date(preparedData.Est_Start_Dt);
     }
@@ -66,9 +66,7 @@ const prepareProjectData = (data: any) => {
         preparedData.Entry_Date = new Date(preparedData.Entry_Date);
     }
 
-    if (preparedData.Updated_Date && typeof preparedData.Updated_Date === 'string') {
-        preparedData.Updated_Date = new Date(preparedData.Updated_Date);
-    }
+  
 
     return preparedData;
 };
@@ -84,7 +82,7 @@ export const getAllProjects = async (req: Request, res: Response) => {
             sortOrder
         };
 
-        const validation = validateWithZod<any>(taskTypeQuerySchema, queryData);
+        const validation = validateWithZod<any>(projectMasterQuerySchema, queryData);
 
         if (!validation.success) {
             return res.status(400).json({
@@ -98,13 +96,8 @@ export const getAllProjects = async (req: Request, res: Response) => {
 
         const where: any = {};
 
-        if (queryParams.ttDelFlag !== 'all') {
-            where.TT_Del_Flag = queryParams.ttDelFlag === '1' ? 1 : 0;
-        }
-
-        if (queryParams.status !== 'all') {
-            where.Status = queryParams.status === '1' ? 1 : 0;
-        }
+     
+       
 
         if (queryParams.search) {
             where.Task_Type = {
@@ -123,7 +116,7 @@ export const getAllProjects = async (req: Request, res: Response) => {
         const orderField = queryParams.sortBy || 'Task_Type_Id';
         const orderDirection = queryParams.sortOrder || 'ASC';
 
-        const { rows, count } = await TaskType_Master.findAndCountAll({
+        const { rows, count } = await Project_Master.findAndCountAll({
             where,
             limit: queryParams.limit,
             offset: (queryParams.page - 1) * queryParams.limit,
@@ -149,7 +142,7 @@ export const getAllProjects = async (req: Request, res: Response) => {
 
 export const getProjectById = async (req: Request, res: Response) => {
     try {
-        // Validate ID parameter
+    
         const validation = validateWithZod<{ id: number }>(projectIdSchema, req.params);
         if (!validation.success) {
             return res.status(400).json({
@@ -167,7 +160,7 @@ export const getProjectById = async (req: Request, res: Response) => {
             return notFound(res, 'Project not found');
         }
 
-        // Check if active
+       
         if (project.IsActive === 0) {
             return notFound(res, 'Project is inactive');
         }
@@ -188,7 +181,6 @@ export const createProject = async (req: Request, res: Response) => {
             Project_Desc: req.body.Project_Desc?.trim()
         };
 
-        // Check if project with same name exists (case-insensitive)
         if (normalizedBody.Project_Name) {
             const existing = await Project_Master.findOne({
                 where: {
@@ -208,7 +200,6 @@ export const createProject = async (req: Request, res: Response) => {
             }
         }
 
-        // Get the maximum Project_Id and add 1 for the new record
         const maxIdResult = await Project_Master.findOne({
             attributes: [
                 [Project_Master.sequelize!.fn('MAX', Project_Master.sequelize!.col('Project_Id')), 'maxId']
@@ -220,7 +211,7 @@ export const createProject = async (req: Request, res: Response) => {
 
         const preparedData = {
             ...normalizedBody,
-            Project_Id: nextId, // Manually set the ID
+            Project_Id: nextId,
             IsActive: 1,
             Project_Status: normalizedBody.Project_Status || 1,
             Est_Start_Dt: normalizedBody.Est_Start_Dt
@@ -230,7 +221,7 @@ export const createProject = async (req: Request, res: Response) => {
                 ? new Date(normalizedBody.Est_End_Dt)
                 : null,
             Entry_Date: new Date(),
-            Entry_By: (req as any).user?.userId || null // Assuming user info is in req.user
+            Entry_By: (req as any).user?.userId || null 
         };
 
         const validation = validateWithZod<ProjectMasterCreate>(
@@ -246,7 +237,7 @@ export const createProject = async (req: Request, res: Response) => {
             });
         }
 
-        // Create with manual ID
+        
         const project = await Project_Master.create(validation.data as any);
 
         return created(res, project, 'Project created successfully');
@@ -259,7 +250,7 @@ export const createProject = async (req: Request, res: Response) => {
 
 export const updateProject = async (req: Request, res: Response) => {
     try {
-        // Validate ID parameter
+
         const idValidation = validateWithZod<{ id: number }>(projectIdSchema, req.params);
         if (!idValidation.success) {
             return res.status(400).json({
@@ -271,7 +262,7 @@ export const updateProject = async (req: Request, res: Response) => {
 
         const { id } = idValidation.data!;
 
-        // Check if project exists and is active
+
         const project = await Project_Master.findOne({
             where: {
                 Project_Id: id,
@@ -283,7 +274,7 @@ export const updateProject = async (req: Request, res: Response) => {
             return notFound(res, 'Project not found or is inactive');
         }
 
-        // If updating Project_Name, check for duplicates
+      
         if (req.body.Project_Name && req.body.Project_Name.trim() !== project.Project_Name) {
             const duplicateProject = await Project_Master.findOne({
                 where: {
@@ -304,7 +295,7 @@ export const updateProject = async (req: Request, res: Response) => {
             }
         }
 
-        // Validate request body
+        
         const validation = validateWithZod<ProjectMasterUpdate>(projectMasterUpdateSchema, req.body);
         if (!validation.success) {
             return res.status(400).json({
@@ -316,11 +307,10 @@ export const updateProject = async (req: Request, res: Response) => {
 
         const validatedBody = validation.data!;
 
-        // Prepare data by converting dates
+
         const updateData = prepareProjectData({
-            ...validatedBody,
-            Updated_Date: new Date(),
-            Updated_By: (req as any).user?.userId || null // Assuming user info is in req.user
+            ...validatedBody
+          
         });
 
         await project.update(updateData);
@@ -335,7 +325,6 @@ export const updateProject = async (req: Request, res: Response) => {
 
 export const deleteProject = async (req: Request, res: Response) => {
     try {
-        // Validate ID parameter
         const validation = validateWithZod<{ id: number }>(projectIdSchema, req.params);
         if (!validation.success) {
             return res.status(400).json({
@@ -353,12 +342,10 @@ export const deleteProject = async (req: Request, res: Response) => {
             return notFound(res, 'Project not found');
         }
 
-        // Soft delete by setting IsActive to 0
+        
         await project.update({
             IsActive: 0,
-            Project_Status: 0,
-            Updated_Date: new Date(),
-            Updated_By: (req as any).user?.userId || null
+            Project_Status: 0
         });
 
         deleted(res, 'Project deleted successfully');
@@ -396,7 +383,7 @@ export const getActiveProjects = async (req: Request, res: Response) => {
 
 export const restoreProject = async (req: Request, res: Response) => {
     try {
-        // Validate ID parameter
+       
         const validation = validateWithZod<{ id: number }>(projectIdSchema, req.params);
         if (!validation.success) {
             return res.status(400).json({
@@ -416,9 +403,7 @@ export const restoreProject = async (req: Request, res: Response) => {
 
         await project.update({
             IsActive: 1,
-            Project_Status: 1,
-            Updated_Date: new Date(),
-            Updated_By: (req as any).user?.userId || null
+            Project_Status: 1
         });
 
         res.status(200).json({
