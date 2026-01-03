@@ -1,0 +1,585 @@
+import express from 'express';
+import {
+    getAllProjects,
+    getProjectById,
+    createProject,
+    updateProject,
+    deleteProject,
+    getActiveProjects,
+    restoreProject
+} from '../../controllers/masters/taskManagement/taskAssign.controller' // Update controller path
+import { authenticate, authorize } from '../../middleware/auth';
+
+const router = express.Router();
+
+/**
+ * @swagger
+ * tags:
+ *   name: Projects
+ *   description: Project management endpoints
+ */
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Project:
+ *       type: object
+ *       required:
+ *         - Project_Name
+ *       properties:
+ *         Project_Id:
+ *           type: integer
+ *           readOnly: true
+ *         Project_Name:
+ *           type: string
+ *           maxLength: 250
+ *         Project_Desc:
+ *           type: string
+ *           nullable: true
+ *         Company_Id:
+ *           type: integer
+ *           nullable: true
+ *           minimum: 0
+ *         Project_Head:
+ *           type: integer
+ *           nullable: true
+ *           minimum: 0
+ *         Est_Start_Dt:
+ *           type: string
+ *           format: date-time
+ *           nullable: true
+ *           example: "2024-01-15T00:00:00Z"
+ *         Est_End_Dt:
+ *           type: string
+ *           format: date-time
+ *           nullable: true
+ *           example: "2024-12-31T00:00:00Z"
+ *         Project_Status:
+ *           type: integer
+ *           enum: [0, 1]
+ *           default: 1
+ *           description: "0 = Inactive, 1 = Active"
+ *         Entry_By:
+ *           type: integer
+ *           nullable: true
+ *           readOnly: true
+ *         Entry_Date:
+ *           type: string
+ *           format: date-time
+ *           readOnly: true
+ *           example: "2024-01-01T12:00:00Z"    
+ *         IsActive:
+ *           type: integer
+ *           enum: [0, 1]
+ *           default: 1
+ *           description: "0 = Inactive, 1 = Active"
+ * 
+ *     ProjectCreate:
+ *       type: object
+ *       required:
+ *         - Project_Name
+ *       properties:
+ *         Project_Name:
+ *           type: string
+ *           maxLength: 250
+ *           example: "New Project"
+ *         Project_Desc:
+ *           type: string
+ *           nullable: true
+ *           example: "Project description"
+ *         Company_Id:
+ *           type: integer
+ *           nullable: true
+ *           example: 1
+ *         Project_Head:
+ *           type: integer
+ *           nullable: true
+ *           example: 5
+ *         Est_Start_Dt:
+ *           type: string
+ *           format: date-time
+ *           nullable: true
+ *           example: "2024-01-15T00:00:00Z"
+ *         Est_End_Dt:
+ *           type: string
+ *           format: date-time
+ *           nullable: true
+ *           example: "2024-12-31T00:00:00Z"
+ *         Project_Status:
+ *           type: integer
+ *           enum: [0, 1]
+ *           default: 1
+ *           example: 1
+ * 
+ *     ProjectUpdate:
+ *       type: object
+ *       properties:
+ *         Project_Name:
+ *           type: string
+ *           maxLength: 250
+ *           example: "Updated Project Name"
+ *         Project_Desc:
+ *           type: string
+ *           nullable: true
+ *           example: "Updated description"
+ *         Company_Id:
+ *           type: integer
+ *           nullable: true
+ *           example: 2
+ *         Project_Head:
+ *           type: integer
+ *           nullable: true
+ *           example: 6
+ *         Est_Start_Dt:
+ *           type: string
+ *           format: date-time
+ *           nullable: true
+ *           example: "2024-02-01T00:00:00Z"
+ *         Est_End_Dt:
+ *           type: string
+ *           format: date-time
+ *           nullable: true
+ *           example: "2024-11-30T00:00:00Z"
+ *         Project_Status:
+ *           type: integer
+ *           enum: [0, 1]
+ *           example: 1
+ *         IsActive:
+ *           type: integer
+ *           enum: [0, 1]
+ *           example: 1
+ * 
+ *     Pagination:
+ *       type: object
+ *       properties:
+ *         totalRecords:
+ *           type: integer
+ *           example: 150
+ *         currentPage:
+ *           type: integer
+ *           example: 1
+ *         totalPages:
+ *           type: integer
+ *           example: 8
+ *         pageSize:
+ *           type: integer
+ *           example: 20
+ *         hasNextPage:
+ *           type: boolean
+ *           example: true
+ *         hasPreviousPage:
+ *           type: boolean
+ *           example: false
+ * 
+ *     Error:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *           example: false
+ *         message:
+ *           type: string
+ *           example: "Validation failed"
+ *         errors:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               field:
+ *                 type: string
+ *                 example: "Project_Name"
+ *               message:
+ *                 type: string
+ *                 example: "Project Name is required"
+ * 
+ *   parameters:
+ *     projectId:
+ *       name: id
+ *       in: path
+ *       description: Project ID
+ *       required: true
+ *       schema:
+ *         type: integer
+ *         minimum: 1
+ *       example: 1
+ * 
+ *     paginationPage:
+ *       name: page
+ *       in: query
+ *       description: Page number
+ *       required: false
+ *       schema:
+ *         type: integer
+ *         minimum: 1
+ *         default: 1
+ *       example: 1
+ * 
+ *     paginationLimit:
+ *       name: limit
+ *       in: query
+ *       description: Items per page (max 100)
+ *       required: false
+ *       schema:
+ *         type: integer
+ *         minimum: 1
+ *         maximum: 100
+ *         default: 20
+ *       example: 20
+ * 
+ *     searchQuery:
+ *       name: search
+ *       in: query
+ *       description: Search by project name
+ *       required: false
+ *       schema:
+ *         type: string
+ * 
+ *     projectStatusFilter:
+ *       name: projectStatus
+ *       in: query
+ *       description: Filter by project status
+ *       required: false
+ *       schema:
+ *         type: string
+ *         enum: ["0", "1", "all"]
+ *         default: "all"
+ * 
+ *     companyIdFilter:
+ *       name: companyId
+ *       in: query
+ *       description: Filter by company ID
+ *       required: false
+ *       schema:
+ *         type: integer
+ *         minimum: 0
+ * 
+ *     isActiveFilter:
+ *       name: isActive
+ *       in: query
+ *       description: Filter by active status
+ *       required: false
+ *       schema:
+ *         type: string
+ *         enum: ["0", "1", "all"]
+ *         default: "1"
+ * 
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
+ */
+/**
+ * @swagger
+ * /api/masters/project:
+ *   get:
+ *     summary: Get all projects with pagination and filtering
+ *     description: Retrieve a paginated list of projects with optional filtering and search
+ *     tags: [Projects]
+ *     parameters:
+ *       - $ref: '#/components/parameters/paginationPage'
+ *       - $ref: '#/components/parameters/paginationLimit'
+ *       - $ref: '#/components/parameters/searchQuery'
+ *       - $ref: '#/components/parameters/projectStatusFilter'
+ *       - $ref: '#/components/parameters/companyIdFilter'
+ *       - $ref: '#/components/parameters/isActiveFilter'
+ *       - name: projectHead
+ *         in: query
+ *         description: Filter by project head ID
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           minimum: 0
+ *       - name: sortBy
+ *         in: query
+ *         description: Sort field
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: ["Project_Id", "Project_Name", "Est_Start_Dt", "Est_End_Dt", "Entry_Date"]
+ *           default: "Project_Id"
+ *       - name: sortOrder
+ *         in: query
+ *         description: Sort order
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: ["ASC", "DESC"]
+ *           default: "ASC"
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved projects
+ *       400:
+ *         description: Invalid query parameters
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/', getAllProjects);
+
+/**
+ * @swagger
+ * /api/masters/project/active:
+ *   get:
+ *     summary: Get all active projects
+ *     description: Retrieve all projects that are active (IsActive=1)
+ *     tags: [Projects]
+ *     parameters:
+ *       - $ref: '#/components/parameters/companyIdFilter'
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved active projects
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Project'
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/active', getActiveProjects);
+
+/**
+ * @swagger
+ * /api/masters/project/{id}:
+ *   get:
+ *     summary: Get project by ID
+ *     description: Retrieve a specific project by its ID
+ *     tags: [Projects]
+ *     parameters:
+ *       - $ref: '#/components/parameters/projectId'
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved project
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Project'
+ *       400:
+ *         description: Invalid ID parameter
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Project not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/:id', getProjectById);
+
+/**
+ * @swagger
+ * /api/masters/project:
+ *   post:
+ *     summary: Create a new project
+ *     description: Create a new project record
+ *     tags: [Projects]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ProjectCreate'
+ *     responses:
+ *       201:
+ *         description: Project created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Project'
+ *       400:
+ *         description: Validation error or duplicate project name
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized - No token provided
+ *       403:
+ *         description: Forbidden - Insufficient permissions
+ *       409:
+ *         description: Conflict - Project name already exists
+ *       500:
+ *         description: Internal server error
+ */
+router.post('/',
+    authenticate,
+    authorize([1, 2]), // Admin and Manager can create projects
+    createProject
+);
+
+/**
+ * @swagger
+ * /api/masters/project/{id}:
+ *   put:
+ *     summary: Update a project
+ *     description: Update an existing project by ID
+ *     tags: [Projects]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/projectId'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ProjectUpdate'
+ *     responses:
+ *       200:
+ *         description: Project updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Project'
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Insufficient permissions
+ *       404:
+ *         description: Project not found
+ *       409:
+ *         description: Conflict - Project name already exists
+ *       500:
+ *         description: Internal server error
+ */
+router.put('/:id',
+    authenticate,
+    authorize([1, 2]), // Admin and Manager can update
+    updateProject
+);
+
+/**
+ * @swagger
+ * /api/masters/project/{id}:
+ *   delete:
+ *     summary: Delete a project (soft delete)
+ *     description: Soft delete a project by setting IsActive to 0
+ *     tags: [Projects]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/projectId'
+ *     responses:
+ *       200:
+ *         description: Project deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Invalid ID parameter
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Insufficient permissions
+ *       404:
+ *         description: Project not found
+ *       500:
+ *         description: Internal server error
+ */
+router.delete('/:id',
+    authenticate,
+    authorize([1]), // Only Admin can delete
+    deleteProject
+);
+
+/**
+ * @swagger
+ * /api/masters/project/{id}/restore:
+ *   patch:
+ *     summary: Restore a deleted project
+ *     description: Restore a soft-deleted project by setting IsActive to 1
+ *     tags: [Projects]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/projectId'
+ *     responses:
+ *       200:
+ *         description: Project restored successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Project'
+ *       400:
+ *         description: Invalid ID parameter
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Insufficient permissions
+ *       404:
+ *         description: Project not found
+ *       500:
+ *         description: Internal server error
+ */
+router.patch('/:id/restore',
+    authenticate,
+    authorize([1]), // Only Admin can restore
+    restoreProject
+);
+
+export default router;
