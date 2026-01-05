@@ -5,7 +5,7 @@ import express from 'express';
 
 import taskTypeRoutes from './taskType.routes';
 import projectRoutes from './project.routes';       
-
+import taskAssignRoutes from './taskAssign.route' 
 //accounting
 // import accoutRoutes from './accounting/accounts.route';
 // import accountGroupRoutes from './accounting/accountGroup.route';
@@ -37,6 +37,8 @@ const router = express.Router();
 router.use('/taskType', taskTypeRoutes)
 
 router.use('/project',projectRoutes)
+
+router.use('/projectAssign',taskAssignRoutes)
 
 // //accounting
 // router.use('/accounts', accoutRoutes);

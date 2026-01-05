@@ -540,46 +540,6 @@ router.delete('/:id',
     deleteProject
 );
 
-/**
- * @swagger
- * /api/masters/project/{id}/restore:
- *   patch:
- *     summary: Restore a deleted project
- *     description: Restore a soft-deleted project by setting IsActive to 1
- *     tags: [Projects]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - $ref: '#/components/parameters/projectId'
- *     responses:
- *       200:
- *         description: Project restored successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
- *                 data:
- *                   $ref: '#/components/schemas/Project'
- *       400:
- *         description: Invalid ID parameter
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden - Insufficient permissions
- *       404:
- *         description: Project not found
- *       500:
- *         description: Internal server error
- */
-router.patch('/:id/restore',
-    authenticate,
-    authorize([1]), // Only Admin can restore
-    restoreProject
-);
+
 
 export default router;

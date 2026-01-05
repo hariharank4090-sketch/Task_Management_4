@@ -644,49 +644,6 @@ router.delete('/:id',
     deleteTaskType
 );
 
-/**
- * @swagger
- * /api/masters/tasktype/{id}/restore:
- *   patch:
- *     summary: Restore a deleted task type
- *     description: Restore a soft-deleted task type by setting TT_Del_Flag to 0 and Status to 1
- *     tags: [Task Types]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - $ref: '#/components/parameters/taskTypeId'
- *     responses:
- *       200:
- *         description: Task type restored successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 
- *                 message:
- *                   type: string
- *             
- *                 data:
- *                   $ref: '#/components/schemas/TaskType'
- *       400:
- *         description: Invalid ID parameter
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden - Insufficient permissions
- *       404:
- *         description: Task type not found
- *       500:
- *         description: Internal server error
- */
-router.patch('/:id/restore',
-    authenticate,
-    authorize([1]), // Only Admin can restore
-    restoreTaskType // Use controller function instead of inline
-);
 
 
 

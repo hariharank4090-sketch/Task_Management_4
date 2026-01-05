@@ -31,6 +31,10 @@ app.use(express.json());
 app.use(morgan("dev"));
 app.use(express.urlencoded({ extended: true }));
 
+
+
+
+
 connectDB();
 createUploadFolders();
 
