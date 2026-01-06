@@ -6,6 +6,7 @@ import express from 'express';
 import taskTypeRoutes from './taskType.routes';
 import projectRoutes from './project.routes';       
 import taskAssignRoutes from './taskAssign.route' 
+import processMasterRoutes from './processMaster.routes'
 //accounting
 // import accoutRoutes from './accounting/accounts.route';
 // import accountGroupRoutes from './accounting/accountGroup.route';
@@ -39,6 +40,7 @@ router.use('/taskType', taskTypeRoutes)
 router.use('/project',projectRoutes)
 
 router.use('/projectAssign',taskAssignRoutes)
+router.use('/processMaster',processMasterRoutes)
 
 // //accounting
 // router.use('/accounts', accoutRoutes);
