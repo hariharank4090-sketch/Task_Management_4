@@ -242,7 +242,7 @@ const router = express.Router();
  *   get:
  *     summary: Get all task types with pagination and filtering
  *     description: Retrieve a paginated list of task types with optional filtering and search
- *     tags: [Process Master]]
+ *     tags: [Process Master]
  *     parameters:
  *       - $ref: '#/components/parameters/paginationPage'
  *       - $ref: '#/components/parameters/paginationLimit'

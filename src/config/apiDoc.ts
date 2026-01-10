@@ -1,7 +1,7 @@
 import type { Application, RequestHandler } from 'express';
 import type { Router } from 'express-serve-static-core';
 
-
+/** ------- Route Inspection Types ------- */
 type HTTPMethod =
   | 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD' | 'OPTIONS' | 'TRACE' | 'CONNECT';
 
@@ -12,16 +12,16 @@ interface RouteInfo {
 }
 
 interface GroupNode {
-  name: string;
-  fullPath: string;
+  name: string;             // e.g. "masters"
+  fullPath: string;         // e.g. "/api/masters"
   children: Map<string, GroupNode>;
-  apis: RouteInfo[];
+  apis: RouteInfo[];        // routes that terminate at this node
 }
 
-
+/** ------- Public entrypoint: call from app.use('/api', ...) ------- */
 export function listRoutes(app: Application, res: any): void {
   const allRoutes = extractRoutes(app)
-    .filter(r => r.fullPath.startsWith('/api/'))
+    .filter(r => r.fullPath.startsWith('/api/'))              // only /api/*
     .sort((a, b) => a.fullPath.localeCompare(b.fullPath) || a.method.localeCompare(b.method));
 
   const root = buildGroupTree(allRoutes);
@@ -30,12 +30,13 @@ export function listRoutes(app: Application, res: any): void {
   res.status(200).send(html);
 }
 
+/** ------- Extract all routes (includes nested routers) ------- */
 function extractRoutes(appOrRouter: Application | Router, base = ''): RouteInfo[] {
   const stack: any[] = (appOrRouter as any)._router?.stack ?? (appOrRouter as any).stack ?? [];
   const collected: RouteInfo[] = [];
 
   for (const layer of stack) {
-
+    // Route with methods (e.g., router.get('/x', ...))
     if (layer.route) {
       const routePath = joinPaths(base, layer.route.path);
       const methods = Object.keys(layer.route.methods || {})
@@ -55,7 +56,7 @@ function extractRoutes(appOrRouter: Application | Router, base = ''): RouteInfo[
       continue;
     }
 
-
+    // Nested router (e.g., router.use('/v1', subRouter))
     if (layer.name === 'router' || layer.handle?.stack) {
       const prefix = mountPathFromLayer(layer);
       const childBase = joinPaths(base, prefix);
@@ -67,27 +68,28 @@ function extractRoutes(appOrRouter: Application | Router, base = ''): RouteInfo[
   return collected;
 }
 
-
+/** Try to recover the mount path for a layer (works for most common cases) */
 function mountPathFromLayer(layer: any): string {
-
+  // Express sometimes provides layer.regexp + layer.keys for params; sometimes layer.path is there.
   if (layer.path) return layer.path;
 
   const keys = (layer.keys || []).map((k: any) => `:${k.name}`);
   const rx: RegExp | undefined = layer.regexp;
   if (!rx || (rx as any).fast_slash) return '';
 
+  // Convert common express mount regex to string path (best-effort)
   let src = rx.source
-    .replace('^\\/', '/')
-    .replace('\\/?(?=\\/|$)', '')
-    .replace('(?=\\/|$)', '')
+    .replace('^\\/', '/')           // start slash
+    .replace('\\/?(?=\\/|$)', '')   // optional trailing slash
+    .replace('(?=\\/|$)', '')       // end lookahead
     .replace('^', '')
     .replace('$', '');
 
-
+  // Replace param capture groups with :param
   let i = 0;
   src = src.replace(/\(\?:\(\[\^\\\/]\+\?\)\)/g, () => keys[i++] || ':param');
 
-
+  // Clean up escaped slashes
   src = src.replace(/\\\//g, '/');
 
   return src || '';
@@ -101,21 +103,21 @@ function joinPaths(a: string, b: string): string {
 
 function safeName(name: string | undefined): string {
   if (!name) return '';
-
+  // Express often uses "bound " prefix; trim it.
   return String(name).replace(/^bound\s+/, '');
 }
 
-
+/** ------- Build grouping tree by each path segment after /api ------- */
 function buildGroupTree(routes: RouteInfo[]): GroupNode {
   const root: GroupNode = { name: 'api', fullPath: '/api', children: new Map(), apis: [] };
 
   for (const r of routes) {
-
-    const rest = r.fullPath.replace(/^\/api\/?/, '');
+    // Strip leading /api, split remaining into segments
+    const rest = r.fullPath.replace(/^\/api\/?/, ''); // e.g., "masters/users"
     const segments = rest ? rest.split('/').filter(Boolean) : [];
 
     let node = root;
-
+    // If route is exactly /api, park its methods at root
     if (segments.length === 0) {
       node.apis.push(r);
       continue;
@@ -130,7 +132,7 @@ function buildGroupTree(routes: RouteInfo[]): GroupNode {
       }
       node = node.children.get(seg)!;
 
-
+      // If this is the final segment, attach the route to this node
       if (i === segments.length - 1) {
         node.apis.push(r);
       }
@@ -140,22 +142,22 @@ function buildGroupTree(routes: RouteInfo[]): GroupNode {
   return root;
 }
 
-
+/** ------- Count APIs recursively in a group ------- */
 function countAPIs(node: GroupNode): number {
   let count = node.apis.length;
   for (const child of node.children.values()) count += countAPIs(child);
   return count;
 }
 
-
+/** ------- Method -> BG color as requested ------- */
 function bg(method: string): string {
   if (method.includes('GET')) return 'lightgreen';
   if (method.includes('POST')) return 'skyblue';
   if (method.includes('PUT')) return 'orange';
-  return '#FF61D2';
+  return '#FF61D2'; // DELETE, PATCH, etc.
 }
 
-
+/** ------- Render HTML (Tailwind + soft UI + collapsible groups) ------- */
 function renderHTML(root: GroupNode, total: number): string {
   const head = `
   <!doctype html>
@@ -166,7 +168,7 @@ function renderHTML(root: GroupNode, total: number): string {
       name="viewport"
       content="width=device-width,initial-scale=1,viewport-fit=cover"
     />
-    <title>API Explorer - /api/*</title>
+    <title>API Explorer – /api/*</title>
     <!-- Tailwind (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -287,9 +289,9 @@ function renderGroup(node: GroupNode, isRoot = false): string {
     <div id="${id}" data-group-panel class="hidden ml-6 mb-6">
       ${node.apis.length ? renderTable(node) : ''}
       ${Array.from(node.children.values())
-      .sort((a, b) => a.fullPath.localeCompare(b.fullPath))
-      .map(child => renderGroup(child))
-      .join('')}
+        .sort((a, b) => a.fullPath.localeCompare(b.fullPath))
+        .map(child => renderGroup(child))
+        .join('')}
     </div>
   `;
 
@@ -357,7 +359,7 @@ function renderTable(node: GroupNode): string {
 /** ------- Small helpers for HTML safety / ids ------- */
 function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[c] as string)
+    ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;' }[c] as string)
   );
 }
 
