@@ -1,11 +1,11 @@
-// models/masters/taskAssign/type.model.ts
+
 import { DataTypes, Model, Optional } from 'sequelize';
 import { sequelize } from '../../../config/sequalizer';
 import { z } from 'zod';
 
 const modelName = 'Project_Employee';
 
-/* ================= TYPES ================= */
+
 
 export interface TaskAssignAttributes {
   Id: number;
@@ -16,7 +16,7 @@ export interface TaskAssignAttributes {
 export type TaskAssignCreationAttributes = Optional<TaskAssignAttributes, 'Id'>;
 export type TaskAssignUpdateAttributes = Partial<TaskAssignAttributes>;
 
-/* ================= MODEL ================= */
+
 
 export class TaskAssign_Master
   extends Model<TaskAssignAttributes, TaskAssignCreationAttributes>
@@ -30,21 +30,20 @@ export class TaskAssign_Master
   declare Employee?: any;
 }
 
-/* ================= ZOD SCHEMAS ================= */
 
-// Create single assignment
+
 export const taskAssignCreationSchema = z.object({
   Project_Id: z.coerce.number().int().positive(),
   User_Id: z.coerce.number().int().positive()
 }).strict();
 
-// Update single assignment
+
 export const taskAssignUpdateSchema = z.object({
   Project_Id: z.coerce.number().int().positive().optional(),
   User_Id: z.coerce.number().int().positive().optional()
 }).strict();
 
-// Query params
+
 export const taskAssignQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
@@ -55,14 +54,14 @@ export const taskAssignQuerySchema = z.object({
   sortOrder: z.enum(['ASC', 'DESC']).default('ASC')
 }).strict();
 
-// ID param
+
 export const taskAssignIdSchema = z.object({
   id: z.coerce.number().int().positive()
 }).strict();
 
-/* ================= BULK SCHEMAS ================= */
 
-// ✅ BULK CREATE
+
+
 export const taskAssignBulkCreateSchema = z.array(
   z.object({
     Project_Id: z.number().int().positive(),
@@ -70,15 +69,15 @@ export const taskAssignBulkCreateSchema = z.array(
   }).strict()
 ).min(1).max(100);
 
-// ✅ BULK UPDATE (PROJECT → USERS REPLACEMENT)
+
 export const taskAssignBulkUpdateSchema = z.array(
   z.object({
     Project_Id: z.number().int().positive(),
-    User_Id: z.number().int().positive()  // matches your request
+    User_Id: z.number().int().positive()
   })
 ).min(1, "At least one assignment is required");
 
-/* ================= TYPES ================= */
+
 
 export type TaskAssignCreateInput = z.infer<typeof taskAssignCreationSchema>;
 export type TaskAssignUpdateInput = z.infer<typeof taskAssignUpdateSchema>;
@@ -88,7 +87,7 @@ export type TaskAssignBulkUpdateInput = z.infer<
   typeof taskAssignBulkUpdateSchema
 >;
 
-/* ================= SEQUELIZE INIT ================= */
+
 
 TaskAssign_Master.init(
   {
@@ -98,7 +97,7 @@ TaskAssign_Master.init(
       primaryKey: true
     },
     Project_Id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.BIGINT,
       allowNull: false
     },
     User_Id: {
@@ -115,10 +114,11 @@ TaskAssign_Master.init(
   }
 );
 
-/* ================= ASSOCIATIONS ================= */
+
 
 import { Project_Master } from '../project/type.model';
 import { Employee_Master } from '../employee/type.model';
+
 
 TaskAssign_Master.belongsTo(Project_Master, {
   foreignKey: 'Project_Id',
@@ -132,7 +132,18 @@ TaskAssign_Master.belongsTo(Employee_Master, {
   as: 'Employee'
 });
 
-// ✅ BULK DELETE SCHEMA
+
+Project_Master.hasMany(TaskAssign_Master, {
+  foreignKey: 'Project_Id',
+  sourceKey: 'Project_Id',
+  as: 'Assignments'
+});
+
+Employee_Master.hasMany(TaskAssign_Master, {
+  foreignKey: 'User_Id',
+  sourceKey: 'Emp_Id',
+  as: 'Assignments'
+});
 export const taskAssignBulkDeleteSchema = z.array(
   z.number().int().positive()
 ).min(1).max(100);

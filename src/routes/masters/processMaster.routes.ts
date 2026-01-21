@@ -1,13 +1,4 @@
 import express from 'express';
-import {
-    getAllTaskTypes,
-    getTaskTypeById,
-    createTaskType,
-    updateTaskType,
-    deleteTaskType,
-    getActiveTaskTypes,
-    restoreTaskType
-} from '../../controllers/masters/taskManagement/taskType.controller'
 import { authenticate, authorize } from '../../middleware/auth';
 import { createProcessMaster, deleteProcessMaster, getAllProcessMaster, getProcessMasterById, updateProcessMaster } from '../../controllers/masters/taskManagement/processMaster.controller';
 
@@ -24,92 +15,70 @@ const router = express.Router();
  * @swagger
  * components:
  *   schemas:
- *     Process_Name:
+ *     ProcessMaster:
  *       type: object
- *       required:
- *         - Process_Name
  *       properties:
  *         Id:
  *           type: integer
  *           readOnly: true
- *       
-
- *     TaskTypeCreate:
- *       type: object
- *       required:
- *         - Task_Type
- *       properties:
- *         Task_Type:
+ *           example: 1
+ *         Process_Name:
  *           type: string
  *           maxLength: 250
- *           example: "MONTHLY REPORT"
- *         Is_Reptative:
+ *           example: "Monthly Reporting Process"
+ *         Description:
+ *           type: string
+ *           nullable: true
+ *           example: "Process for generating monthly reports"
+ *         Status:
+ *           type: integer
+ *           enum: [0, 1]
+ *           example: 1
+ *         Created_By:
+ *           type: integer
+ *           example: 1
+ *         Created_Date:
+ *           type: string
+ *           format: date-time
+ *           example: "2024-01-15T09:00:00Z"
+ *         Updated_By:
+ *           type: integer
+ *           nullable: true
+ *         Updated_Date:
+ *           type: string
+ *           format: date-time
+ *           nullable: true
+ *         Del_Flag:
  *           type: integer
  *           enum: [0, 1]
  *           default: 0
- *           example: 1
- *         Hours_Duration:
- *           type: integer
- *           nullable: true
- *           minimum: 0
- *           example: 8
- *         Day_Duration:
- *           type: integer
- *           nullable: true
- *           minimum: 0
- *           example: 1
- *         Project_Id:
- *           type: integer
- *           nullable: true
- *           minimum: 1
- *           example: 5
- *         Est_StartTime:
- *           type: string
- *           format: date-time
- *           nullable: true
- *           example: "2024-01-15T09:00:00Z"
- *         Est_EndTime:
- *           type: string
- *           format: date-time
- *           nullable: true
- *           example: "2024-01-15T17:00:00Z"
+ *           example: 0
  * 
- *     TaskTypeUpdate:
+ *     ProcessMasterCreate:
  *       type: object
+ *       required:
+ *         - Process_Name
  *       properties:
- *         Task_Type:
+ *         Process_Name:
  *           type: string
  *           maxLength: 250
- *           example: "UPDATED TASK NAME"
- *         Is_Reptative:
- *           type: integer
- *           enum: [0, 1]
- *           example: 0
- *         Hours_Duration:
- *           type: integer
- *           nullable: true
- *           minimum: 0
- *           example: 10
- *         Day_Duration:
- *           type: integer
- *           nullable: true
- *           minimum: 0
- *           example: 2
- *         Project_Id:
- *           type: integer
- *           nullable: true
- *           minimum: 1
- *           example: 6
- *         Est_StartTime:
+ *           example: "Monthly Reporting Process"
+ *         Description:
  *           type: string
- *           format: date-time
  *           nullable: true
- *           example: "2024-02-01T09:00:00Z"
- *         Est_EndTime:
+ *           example: "Process for generating monthly reports"
+ * 
+ *     ProcessMasterUpdate:
+ *       type: object
+ *       properties:
+ *         Process_Name:
  *           type: string
- *           format: date-time
+ *           maxLength: 250
+ *           example: "Updated Process Name"
+ *         Description:
+ *           type: string
  *           nullable: true
- *           example: "2024-02-01T18:00:00Z"
+ *           example: "Updated description"
  *         Status:
  *           type: integer
  *           enum: [0, 1]
@@ -153,16 +122,16 @@ const router = express.Router();
  *             properties:
  *               field:
  *                 type: string
- *                 example: "Task_Type"
+ *                 example: "Process_Name"
  *               message:
  *                 type: string
- *                 example: "Task Type is required"
+ *                 example: "Process Name is required"
  * 
  *   parameters:
- *     taskTypeId:
+ *     processMasterId:
  *       name: id
  *       in: path
- *       description: Task Type ID
+ *       description: Process Master ID
  *       required: true
  *       schema:
  *         type: integer
@@ -195,19 +164,10 @@ const router = express.Router();
  *     searchQuery:
  *       name: search
  *       in: query
- *       description: Search by task type name
+ *       description: Search by process name
  *       required: false
  *       schema:
  *         type: string
- * 
- *     projectIdFilter:
- *       name: projectId
- *       in: query
- *       description: Filter by project ID
- *       required: false
- *       schema:
- *         type: integer
- *         minimum: 1
  * 
  *     statusFilter:
  *       name: status
@@ -220,7 +180,7 @@ const router = express.Router();
  *         default: "1"
  * 
  *     delFlagFilter:
- *       name: ttDelFlag
+ *       name: delFlag
  *       in: query
  *       description: Filter by deletion flag
  *       required: false
@@ -240,31 +200,23 @@ const router = express.Router();
  * @swagger
  * /api/masters/processMaster:
  *   get:
- *     summary: Get all task types with pagination and filtering
- *     description: Retrieve a paginated list of task types with optional filtering and search
+ *     summary: Get all process masters with pagination and filtering
+ *     description: Retrieve a paginated list of process masters with optional filtering and search
  *     tags: [Process Master]
  *     parameters:
  *       - $ref: '#/components/parameters/paginationPage'
  *       - $ref: '#/components/parameters/paginationLimit'
  *       - $ref: '#/components/parameters/searchQuery'
- *       - $ref: '#/components/parameters/projectIdFilter'
  *       - $ref: '#/components/parameters/statusFilter'
  *       - $ref: '#/components/parameters/delFlagFilter'
- *       - name: isReptative
- *         in: query
- *         description: Filter by repetitive flag
- *         required: false
- *         schema:
- *           type: string
- *           enum: ["0", "1"]
  *       - name: sortBy
  *         in: query
  *         description: Sort field
  *         required: false
  *         schema:
  *           type: string
- *           enum: ["Task_Type_Id", "Task_Type", "Created_At", "Updated_At", "Project_Id"]
- *           default: "Task_Type_Id"
+ *           enum: ["Id", "Process_Name", "Created_Date"]
+ *           default: "Id"
  *       - name: sortOrder
  *         in: query
  *         description: Sort order
@@ -275,7 +227,7 @@ const router = express.Router();
  *           default: "ASC"
  *     responses:
  *       200:
- *         description: Successfully retrieved task types
+ *         description: Successfully retrieved process masters
  *         content:
  *           application/json:
  *             schema:
@@ -283,8 +235,10 @@ const router = express.Router();
  *               properties:
  *                 success:
  *                   type: boolean
+ *                   example: true
  *                 message:
  *                   type: string
+ *                   example: "Process masters retrieved successfully"
  *                 data:
  *                   type: array
  *                   items:
@@ -302,7 +256,6 @@ const router = express.Router();
  */
 router.get('/', getAllProcessMaster);
 
-
 /**
  * @swagger
  * /api/masters/processMaster/{id}:
@@ -311,10 +264,10 @@ router.get('/', getAllProcessMaster);
  *     description: Retrieve a specific Process Master by its ID
  *     tags: [Process Master]
  *     parameters:
- *       - $ref: '#/components/parameters/processMasterById'
+ *       - $ref: '#/components/parameters/processMasterId'
  *     responses:
  *       200:
- *         description: Successfully retrieved task type
+ *         description: Successfully retrieved process master
  *         content:
  *           application/json:
  *             schema:
@@ -322,8 +275,10 @@ router.get('/', getAllProcessMaster);
  *               properties:
  *                 success:
  *                   type: boolean
+ *                   example: true
  *                 message:
  *                   type: string
+ *                   example: "Process master retrieved successfully"
  *                 data:
  *                   $ref: '#/components/schemas/ProcessMaster'
  *       400:
@@ -333,7 +288,7 @@ router.get('/', getAllProcessMaster);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       404:
- *         description: Task type not found
+ *         description: Process master not found
  *         content:
  *           application/json:
  *             schema:
@@ -341,10 +296,10 @@ router.get('/', getAllProcessMaster);
  *               properties:
  *                 success:
  *                   type: boolean
- *               
+ *                   example: false
  *                 message:
  *                   type: string
- *                
+ *                   example: "Process master not found"
  *       500:
  *         description: Internal server error
  */
@@ -375,10 +330,10 @@ router.get('/:id', getProcessMasterById);
  *               properties:
  *                 success:
  *                   type: boolean
- *                 
+ *                   example: true
  *                 message:
  *                   type: string
- *                
+ *                   example: "Process master created successfully"
  *                 data:
  *                   $ref: '#/components/schemas/ProcessMaster'
  *       400:
@@ -389,30 +344,8 @@ router.get('/:id', getProcessMasterById);
  *               $ref: '#/components/schemas/Error'
  *       401:
  *         description: Unauthorized - No token provided
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                
- *                 message:
- *                   type: string
- *                 
  *       403:
  *         description: Forbidden - Insufficient permissions
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *              
- *                 message:
- *                   type: string
- *                 
  *       409:
  *         description: Conflict - Process Master already exists
  *         content:
@@ -422,10 +355,10 @@ router.get('/:id', getProcessMasterById);
  *               properties:
  *                 success:
  *                   type: boolean
- *                 
+ *                   example: false
  *                 message:
  *                   type: string
- *                  
+ *                   example: "Process master already exists"
  *       500:
  *         description: Internal server error
  */
@@ -462,10 +395,10 @@ router.post('/',
  *               properties:
  *                 success:
  *                   type: boolean
- *             
+ *                   example: true
  *                 message:
  *                   type: string
- *                  
+ *                   example: "Process master updated successfully"
  *                 data:
  *                   $ref: '#/components/schemas/ProcessMaster'
  *       400:
@@ -487,10 +420,10 @@ router.post('/',
  *               properties:
  *                 success:
  *                   type: boolean
- *                
+ *                   example: false
  *                 message:
  *                   type: string
- *                 
+ *                   example: "Process master not found"
  *       409:
  *         description: Conflict - ProcessMaster name already exists
  *         content:
@@ -500,22 +433,22 @@ router.post('/',
  *               properties:
  *                 success:
  *                   type: boolean
- *                
+ *                   example: false
  *                 message:
  *                   type: string
- *             
+ *                   example: "Process master name already exists"
  *       500:
  *         description: Internal server error
  */
 router.put('/:id',
     authenticate,
-    authorize([1, 2]), // Admin and Manager can update
+    authorize([1, 2]),
     updateProcessMaster
 );
 
 /**
  * @swagger
- * /api/masters/ProcessMaster/{id}:
+ * /api/masters/processMaster/{id}:
  *   delete:
  *     summary: Delete a ProcessMaster (soft delete)
  *     description: Soft delete a ProcessMaster
@@ -523,7 +456,7 @@ router.put('/:id',
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - $ref: '#/components/parameters/ProcessMasterId'
+ *       - $ref: '#/components/parameters/processMasterId'
  *     responses:
  *       200:
  *         description: ProcessMaster deleted successfully
@@ -534,10 +467,10 @@ router.put('/:id',
  *               properties:
  *                 success:
  *                   type: boolean
- *                
+ *                   example: true
  *                 message:
  *                   type: string
- *              
+ *                   example: "Process master deleted successfully"
  *       400:
  *         description: Invalid ID parameter
  *         content:
@@ -549,17 +482,14 @@ router.put('/:id',
  *       403:
  *         description: Forbidden - Insufficient permissions
  *       404:
- *         description: Task type not found
+ *         description: Process master not found
  *       500:
  *         description: Internal server error
  */
 router.delete('/:id',
     authenticate,
-    authorize([1]), // Only Admin can delete
+    authorize([1]),
     deleteProcessMaster
 );
-
-
-
 
 export default router;

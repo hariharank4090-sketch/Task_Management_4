@@ -284,7 +284,7 @@ export const deleteBulkTaskAssign = async (req: Request, res: Response) => {
   }
 };
 
-// Keep the rest of your existing controller functions
+
 export const getAllTaskAssign = async (req: Request, res: Response) => {
   try {
     const sortBy = (req.query.sortBy as string) || 'Id';
@@ -300,49 +300,95 @@ export const getAllTaskAssign = async (req: Request, res: Response) => {
     }
 
     const queryParams = validation.data!;
-    const where: any = {};
-
-    if (queryParams.projectId) where.Project_Id = queryParams.projectId;
-    if (queryParams.userId) where.User_Id = queryParams.userId;
-
-    const { rows, count } = await TaskAssign_Master.findAndCountAll({
-      where,
-      limit: queryParams.limit,
-      offset: (queryParams.page - 1) * queryParams.limit,
-      order: [[sortBy, sortOrder]],
-      include: [
-        {
-          model: Project_Master,
-          as: 'Project',
-          attributes: ['Project_Id', 'Project_Name'],
-          required: false
-        },
-        {
-          model: Employee_Master,
-          as: 'Employee',
-          attributes: ['Emp_Id', 'Emp_Name'],
-          required: false
-        }
-      ]
+    
+    // Build WHERE conditions
+    const whereConditions: string[] = [];
+    const params: any[] = [];
+    
+    if (queryParams.projectId) {
+      whereConditions.push('pe.Project_Id = ?');
+      params.push(queryParams.projectId);
+    }
+    
+    if (queryParams.userId) {
+      whereConditions.push('pe.User_Id = ?');
+      params.push(queryParams.userId);
+    }
+    
+    const whereClause = whereConditions.length > 0 
+      ? `WHERE ${whereConditions.join(' AND ')}` 
+      : '';
+    
+    // Calculate pagination
+    const pageSize = queryParams.limit;
+    const offset = (queryParams.page - 1) * pageSize;
+    
+    // Main query - simple version
+    const query = `
+      SELECT 
+        pe.Id,
+        pe.Project_Id,
+        pe.User_Id,
+        pm.Project_Name,
+        em.Emp_Name
+      FROM tbl_Project_Employee pe
+      LEFT JOIN tbl_Project_Master pm ON pe.Project_Id = pm.Project_Id
+      LEFT JOIN tbl_Employee_Master em ON pe.User_Id = em.Emp_Id
+      ${whereClause}
+      ORDER BY pe.Id ASC
+      OFFSET ${offset} ROWS
+      FETCH NEXT ${pageSize} ROWS ONLY
+    `;
+    
+    // Count query
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM tbl_Project_Employee pe
+      ${whereClause}
+    `;
+    
+    // Execute both queries
+    const [rows] = await sequelize.query(query, {
+      replacements: params
     });
+    
+    const [countResult] = await sequelize.query(countQuery, {
+      replacements: params
+    });
+    
+    // Extract data - ensure rows is an array
+    const dataRows = Array.isArray(rows) ? rows : [];
+    const totalRecords = countResult[0] || 0;
+    
+    // Format response
+    const formattedData = dataRows.map((row: any) => ({
+      Id: row.Id,
+      Project_Id: row.Project_Id,
+      User_Id: row.User_Id,
+      Project: {
+        Project_Id: row.Project_Id,
+        Project_Name: row.Project_Name || 'Unknown Project'
+      },
+      Employee: {
+        Emp_Id: row.User_Id,
+        Emp_Name: row.Emp_Name || 'Unknown Employee'
+      }
+    }));
 
     return res.json({
       success: true,
-      data: rows,
-      pagination: {
-        totalRecords: count,
-        currentPage: queryParams.page,
-        totalPages: Math.ceil(count / queryParams.limit),
-        pageSize: queryParams.limit
-      }
+      data: formattedData
     });
 
   } catch (error: any) {
     console.error('getAllTaskAssign error:', error);
-    return servError(error, res);
+    return res.status(500).json({
+      success: false,
+      message: 'Request Failed',
+      error: error.message
+    });
   }
 };
-
 export const getTaskAssignById = async (req: Request, res: Response) => {
   try {
     const validation = validateWithZod<{ id: number }>(taskAssignIdSchema, req.params);
