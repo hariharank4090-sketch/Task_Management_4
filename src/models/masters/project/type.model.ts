@@ -39,7 +39,7 @@ export class Project_Master
     declare IsActive: number | null;
 }
 
-// CORRECTED Zod schemas
+
 export const projectMasterCreationSchema = z.object({
     Project_Name: z.string()
         .min(1, 'Project_Name is required')
