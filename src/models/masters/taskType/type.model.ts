@@ -147,6 +147,7 @@ TaskType_Master.init(
             primaryKey: true,
             field: 'Task_Type_Id'
         },
+        
         Task_Type: {
             type: DataTypes.STRING(250),
             allowNull: false,

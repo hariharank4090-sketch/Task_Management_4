@@ -7,7 +7,9 @@ import {
     deleteTask,
     getTasksByProject,
     getTasksByCompany,
-    getTasksByTaskGroup
+    getTasksByTaskGroup,
+    getTasksWithNoCompany,
+    getTasksWithNoProject
 } from '../../controllers/masters/taskManagement/task.controller';
 import { authenticate, authorize } from '../../middleware/auth';
 
@@ -29,7 +31,6 @@ const router = express.Router();
  *       required:
  *         - Task_Name
  *         - Task_Group_Id
- *         - Entry_By
  *       properties:
  *         Task_Id:
  *           type: integer
@@ -83,7 +84,6 @@ const router = express.Router();
  *         Task_Desc:
  *           type: string
  *           nullable: true
- *           example: "Task description"
  *         Company_id:
  *           type: integer
  *           nullable: true
@@ -327,6 +327,62 @@ router.get('/', getAllTasks);
 
 /**
  * @swagger
+ * /api/masters/tasks/no-company:
+ *   get:
+ *     summary: Get tasks with no company
+ *     description: Retrieve tasks that are not assigned to any company
+ *     tags: [Tasks]
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved tasks with no company
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Task'
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/no-company', getTasksWithNoCompany);
+
+/**
+ * @swagger
+ * /api/masters/tasks/no-project:
+ *   get:
+ *     summary: Get tasks with no project
+ *     description: Retrieve tasks that are not assigned to any project
+ *     tags: [Tasks]
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved tasks with no project
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Task'
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/no-project', getTasksWithNoProject);
+
+/**
+ * @swagger
  * /api/masters/tasks/project/{projectId}:
  *   get:
  *     summary: Get tasks by project ID
@@ -356,8 +412,6 @@ router.get('/', getAllTasks);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
- *       404:
- *         description: No tasks found for this project
  *       500:
  *         description: Internal server error
  */
@@ -394,8 +448,6 @@ router.get('/project/:projectId', getTasksByProject);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
- *       404:
- *         description: No tasks found for this company
  *       500:
  *         description: Internal server error
  */
@@ -432,8 +484,6 @@ router.get('/company/:companyId', getTasksByCompany);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
- *       404:
- *         description: No tasks found for this task group
  *       500:
  *         description: Internal server error
  */
