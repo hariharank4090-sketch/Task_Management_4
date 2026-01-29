@@ -7,6 +7,7 @@ import processMasterRoutes from './processMaster.routes'
 import taskParamTypeRoutes from './taskParamType.route'
 import paramMasterRoutes from './paramMaster.routes'
 import dropdownRoutes from './dropdown.route'
+import taskRoutes from './task.routes'
 
 
 const router = express.Router();
@@ -19,6 +20,7 @@ router.use('/processMaster',processMasterRoutes)
 router.use('/parametDataTypes',taskParamTypeRoutes)
 router.use('/paramMaster',paramMasterRoutes)
 router.use('/dropdowns',dropdownRoutes)
+router.use('/task',taskRoutes)
 
 
 export default router;
