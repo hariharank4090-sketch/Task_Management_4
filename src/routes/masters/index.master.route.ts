@@ -20,7 +20,7 @@ router.use('/processMaster',processMasterRoutes)
 router.use('/parametDataTypes',taskParamTypeRoutes)
 router.use('/paramMaster',paramMasterRoutes)
 router.use('/dropdowns',dropdownRoutes)
-router.use('/task',taskRoutes)
+router.use('/tasks',taskRoutes)
 
 
 export default router;
