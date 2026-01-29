@@ -1,14 +1,15 @@
 import express from 'express';
 import {
-    getAllTasks,
-    getTaskById,
-    createTask,
-    updateTask,
-    deleteTask,
-    getTasksByProject,
-    getTasksByCompany,
-    getTasksByTaskGroup
-} from '../../controllers/masters/taskManagement/task.controller';
+    getAllTaskTypes,
+    getTaskTypeById,
+    createTaskType,
+    updateTaskType,
+    deleteTaskType,
+    getActiveTaskTypes,
+    restoreTaskType,
+    hardDeleteTaskType,
+    getTaskTypesByProjectId
+} from '../../controllers/masters/taskManagement/taskType.controller';
 import { authenticate, authorize } from '../../middleware/auth';
 
 const router = express.Router();
@@ -16,103 +17,161 @@ const router = express.Router();
 /**
  * @swagger
  * tags:
- *   name: Tasks
- *   description: Task management endpoints
+ *   name: TaskTypes
+ *   description: Task Type management endpoints
  */
 
 /**
  * @swagger
  * components:
  *   schemas:
- *     Task:
+ *     TaskType:
  *       type: object
  *       required:
- *         - Task_Name
- *         - Task_Group_Id
- *         - Entry_By
+ *         - Task_Type
  *       properties:
- *         Task_Id:
+ *         Task_Type_Id:
  *           type: integer
  *           readOnly: true
- *         Task_Name:
- *           type: string
- *           maxLength: 255
- *           example: "SMT EXPENSES CHECKING (FRIEGHT, COOLIE, MAMUL)"
- *         Task_Desc:
- *           type: string
- *           nullable: true
- *           example: "SMT EXPENSES CHECKING"
- *         Company_id:
- *           type: integer
- *           nullable: true
- *           example: null
- *         Task_Group_Id:
- *           type: integer
- *           example: 2
- *         Entry_By:
- *           type: integer
  *           example: 1
- *         Entry_Date:
+ *         Task_Type:
  *           type: string
- *           format: date-time
- *           example: "2024-10-18T19:20:33.710Z"
- *         Update_By:
+ *           minLength: 1
+ *           maxLength: 250
+ *           example: "Development"
+ *         Is_Reptative:
  *           type: integer
+ *           minimum: 0
+ *           maximum: 1
+ *           default: 0
+ *           example: 0
+ *         Hours_Duration:
+ *           type: integer
+ *           minimum: 0
+ *           nullable: true
+ *           example: 8
+ *         Day_Duration:
+ *           type: integer
+ *           minimum: 0
  *           nullable: true
  *           example: 1
- *         Update_Date:
- *           type: string
- *           format: date-time
- *           nullable: true
- *           example: "2024-12-16T13:26:12.240Z"
+ *         TT_Del_Flag:
+ *           type: integer
+ *           minimum: 0
+ *           maximum: 1
+ *           default: 0
+ *           example: 0
  *         Project_Id:
  *           type: integer
+ *           minimum: 1
  *           nullable: true
- *           example: null
+ *           example: 1
+ *         Est_StartTime:
+ *           type: string
+ *           format: date-time
+ *           nullable: true
+ *           example: "2024-01-01T09:00:00.000Z"
+ *         Est_EndTime:
+ *           type: string
+ *           format: date-time
+ *           nullable: true
+ *           example: "2024-01-01T17:00:00.000Z"
+ *         Status:
+ *           type: integer
+ *           minimum: 0
+ *           maximum: 1
+ *           default: 1
+ *           example: 1
+ *         Project_Name:
+ *           type: string
+ *           nullable: true
+ *           example: "Project Alpha"
  * 
- *     TaskCreate:
+ *     TaskTypeCreate:
  *       type: object
  *       required:
- *         - Task_Name
- *         - Task_Group_Id
+ *         - Task_Type
  *       properties:
- *         Task_Name:
+ *         Task_Type:
  *           type: string
- *           maxLength: 255
- *           example: "New Task Name"
- *         Task_Desc:
- *           type: string
- *           nullable: true
- *           example: "Task description"
- *         Company_id:
+ *           minLength: 1
+ *           maxLength: 250
+ *           example: "New Task Type"
+ *         Is_Reptative:
  *           type: integer
- *           nullable: true
- *         Task_Group_Id:
+ *           minimum: 0
+ *           maximum: 1
+ *           default: 0
+ *           optional: true
+ *         Hours_Duration:
  *           type: integer
- *           example: 2
+ *           minimum: 0
+ *           nullable: true
+ *           optional: true
+ *         Day_Duration:
+ *           type: integer
+ *           minimum: 0
+ *           nullable: true
+ *           optional: true
  *         Project_Id:
  *           type: integer
+ *           minimum: 1
  *           nullable: true
+ *           optional: true
+ *         Est_StartTime:
+ *           type: string
+ *           format: date-time
+ *           nullable: true
+ *           optional: true
+ *         Est_EndTime:
+ *           type: string
+ *           format: date-time
+ *           nullable: true
+ *           optional: true
  * 
- *     TaskUpdate:
+ *     TaskTypeUpdate:
  *       type: object
  *       properties:
- *         Task_Name:
+ *         Task_Type:
  *           type: string
- *           maxLength: 255
- *           nullable: true
- *         Task_Desc:
- *           type: string
- *           nullable: true
- *         Company_id:
+ *           minLength: 1
+ *           maxLength: 250
+ *           optional: true
+ *         Is_Reptative:
  *           type: integer
- *           nullable: true
- *         Task_Group_Id:
+ *           minimum: 0
+ *           maximum: 1
+ *           optional: true
+ *         Hours_Duration:
  *           type: integer
+ *           minimum: 0
  *           nullable: true
+ *           optional: true
+ *         Day_Duration:
+ *           type: integer
+ *           minimum: 0
+ *           nullable: true
+ *           optional: true
  *         Project_Id:
  *           type: integer
+ *           minimum: 1
  *           nullable: true
+ *           optional: true
+ *         Est_StartTime:
+ *           type: string
+ *           format: date-time
+ *           nullable: true
+ *           optional: true
+ *         Est_EndTime:
+ *           type: string
+ *           format: date-time
+ *           nullable: true
+ *           optional: true
+ *         Status:
+ *           type: integer
+ *           minimum: 0
+ *           maximum: 1
+ *           optional: true
  * 
  *     Pagination:
  *       type: object
@@ -152,21 +211,21 @@ const router = express.Router();
  *             properties:
  *               field:
  *                 type: string
- *                 example: "Task_Name"
+ *                 example: "Task_Type"
  *               message:
  *                 type: string
- *                 example: "Task_Name is required"
+ *                 example: "Task_Type is required"
  * 
  *   parameters:
- *     taskId:
+ *     taskTypeId:
  *       name: id
  *       in: path
- *       description: Task ID
+ *       description: Task Type ID
  *       required: true
  *       schema:
  *         type: integer
  *         minimum: 1
- *       example: 66
+ *       example: 1
  * 
  *     projectId:
  *       name: projectId
@@ -177,26 +236,6 @@ const router = express.Router();
  *         type: integer
  *         minimum: 1
  *       example: 1
- * 
- *     companyId:
- *       name: companyId
- *       in: path
- *       description: Company ID
- *       required: true
- *       schema:
- *         type: integer
- *         minimum: 1
- *       example: 1
- * 
- *     taskGroupId:
- *       name: taskGroupId
- *       in: path
- *       description: Task Group ID
- *       required: true
- *       schema:
- *         type: integer
- *         minimum: 1
- *       example: 2
  * 
  *     paginationPage:
  *       name: page
@@ -224,10 +263,48 @@ const router = express.Router();
  *     searchQuery:
  *       name: search
  *       in: query
- *       description: Search by task name or description
+ *       description: Search by task type name
  *       required: false
  *       schema:
  *         type: string
+ * 
+ *     projectIdQuery:
+ *       name: projectId
+ *       in: query
+ *       description: Filter by project ID
+ *       required: false
+ *       schema:
+ *         type: integer
+ *         minimum: 1
+ * 
+ *     statusQuery:
+ *       name: status
+ *       in: query
+ *       description: Filter by status
+ *       required: false
+ *       schema:
+ *         type: string
+ *         enum: ['0', '1', 'all']
+ *         default: '1'
+ * 
+ *     ttDelFlagQuery:
+ *       name: ttDelFlag
+ *       in: query
+ *       description: Filter by deletion flag
+ *       required: false
+ *       schema:
+ *         type: string
+ *         enum: ['0', '1', 'all']
+ *         default: '0'
+ * 
+ *     isReptativeQuery:
+ *       name: isReptative
+ *       in: query
+ *       description: Filter by repetitive flag
+ *       required: false
+ *       schema:
+ *         type: string
+ *         enum: ['0', '1']
  * 
  *     sortByParam:
  *       name: sortBy
@@ -236,8 +313,8 @@ const router = express.Router();
  *       required: false
  *       schema:
  *         type: string
- *         enum: ["Task_Id", "Task_Name", "Entry_Date", "Update_Date"]
- *         default: "Task_Id"
+ *         enum: ["Task_Type_Id", "Task_Type", "Project_Id"]
+ *         default: "Task_Type_Id"
  * 
  *     sortOrderParam:
  *       name: sortOrder
@@ -247,31 +324,7 @@ const router = express.Router();
  *       schema:
  *         type: string
  *         enum: ["ASC", "DESC"]
- *         default: "DESC"
- * 
- *     companyIdQuery:
- *       name: company_id
- *       in: query
- *       description: Filter by company ID
- *       required: false
- *       schema:
- *         type: integer
- * 
- *     taskGroupIdQuery:
- *       name: task_group_id
- *       in: query
- *       description: Filter by task group ID
- *       required: false
- *       schema:
- *         type: integer
- * 
- *     projectIdQuery:
- *       name: project_id
- *       in: query
- *       description: Filter by project ID
- *       required: false
- *       schema:
- *         type: integer
+ *         default: "ASC"
  * 
  *   securitySchemes:
  *     bearerAuth:
@@ -280,25 +333,25 @@ const router = express.Router();
  *       bearerFormat: JWT
  */
 
+// Public endpoints (no authentication required)
 /**
  * @swagger
- * /api/masters/tasks:
+ * /api/masters/taskType/active:
  *   get:
- *     summary: Get all tasks with pagination and filtering
- *     description: Retrieve a paginated list of tasks with optional filtering and search
- *     tags: [Tasks]
+ *     summary: Get active task types
+ *     description: Retrieve all active (not deleted) task types, optionally filtered by project
+ *     tags: [TaskTypes]
  *     parameters:
- *       - $ref: '#/components/parameters/paginationPage'
- *       - $ref: '#/components/parameters/paginationLimit'
- *       - $ref: '#/components/parameters/searchQuery'
- *       - $ref: '#/components/parameters/companyIdQuery'
- *       - $ref: '#/components/parameters/taskGroupIdQuery'
- *       - $ref: '#/components/parameters/projectIdQuery'
- *       - $ref: '#/components/parameters/sortByParam'
- *       - $ref: '#/components/parameters/sortOrderParam'
+ *       - name: projectId
+ *         in: query
+ *         description: Filter by project ID
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           minimum: 1
  *     responses:
  *       200:
- *         description: Successfully retrieved tasks
+ *         description: Successfully retrieved active task types
  *         content:
  *           application/json:
  *             schema:
@@ -311,7 +364,79 @@ const router = express.Router();
  *                 data:
  *                   type: array
  *                   items:
- *                     $ref: '#/components/schemas/Task'
+ *                     $ref: '#/components/schemas/TaskType'
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/active', getActiveTaskTypes);
+
+/**
+ * @swagger
+ * /api/masters/taskType/project/{projectId}:
+ *   get:
+ *     summary: Get task types by project ID
+ *     description: Retrieve all task types for a specific project
+ *     tags: [TaskTypes]
+ *     parameters:
+ *       - $ref: '#/components/parameters/projectId'
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved task types by project
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/TaskType'
+ *       400:
+ *         description: Invalid project ID
+ *       404:
+ *         description: No task types found for this project
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/project/:projectId', getTaskTypesByProjectId);
+
+/**
+ * @swagger
+ * /api/masters/taskType:
+ *   get:
+ *     summary: Get all task types with pagination and filtering
+ *     description: Retrieve a paginated list of task types with optional filtering and search
+ *     tags: [TaskTypes]
+ *     parameters:
+ *       - $ref: '#/components/parameters/paginationPage'
+ *       - $ref: '#/components/parameters/paginationLimit'
+ *       - $ref: '#/components/parameters/searchQuery'
+ *       - $ref: '#/components/parameters/projectIdQuery'
+ *       - $ref: '#/components/parameters/statusQuery'
+ *       - $ref: '#/components/parameters/ttDelFlagQuery'
+ *       - $ref: '#/components/parameters/isReptativeQuery'
+ *       - $ref: '#/components/parameters/sortByParam'
+ *       - $ref: '#/components/parameters/sortOrderParam'
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved task types
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/TaskType'
  *                 metadata:
  *                   $ref: '#/components/schemas/Pagination'
  *       400:
@@ -323,20 +448,20 @@ const router = express.Router();
  *       500:
  *         description: Internal server error
  */
-router.get('/', getAllTasks);
+router.get('/', getAllTaskTypes);
 
 /**
  * @swagger
- * /api/masters/tasks/project/{projectId}:
+ * /api/masters/taskType/{id}:
  *   get:
- *     summary: Get tasks by project ID
- *     description: Retrieve all tasks for a specific project
- *     tags: [Tasks]
+ *     summary: Get task type by ID
+ *     description: Retrieve a specific task type by its ID
+ *     tags: [TaskTypes]
  *     parameters:
- *       - $ref: '#/components/parameters/projectId'
+ *       - $ref: '#/components/parameters/taskTypeId'
  *     responses:
  *       200:
- *         description: Successfully retrieved tasks by project
+ *         description: Successfully retrieved task type
  *         content:
  *           application/json:
  *             schema:
@@ -347,121 +472,7 @@ router.get('/', getAllTasks);
  *                 message:
  *                   type: string
  *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Task'
- *       400:
- *         description: Invalid project ID
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       404:
- *         description: No tasks found for this project
- *       500:
- *         description: Internal server error
- */
-router.get('/project/:projectId', getTasksByProject);
-
-/**
- * @swagger
- * /api/masters/tasks/company/{companyId}:
- *   get:
- *     summary: Get tasks by company ID
- *     description: Retrieve all tasks for a specific company
- *     tags: [Tasks]
- *     parameters:
- *       - $ref: '#/components/parameters/companyId'
- *     responses:
- *       200:
- *         description: Successfully retrieved tasks by company
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Task'
- *       400:
- *         description: Invalid company ID
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       404:
- *         description: No tasks found for this company
- *       500:
- *         description: Internal server error
- */
-router.get('/company/:companyId', getTasksByCompany);
-
-/**
- * @swagger
- * /api/masters/tasks/task-group/{taskGroupId}:
- *   get:
- *     summary: Get tasks by task group ID
- *     description: Retrieve all tasks for a specific task group
- *     tags: [Tasks]
- *     parameters:
- *       - $ref: '#/components/parameters/taskGroupId'
- *     responses:
- *       200:
- *         description: Successfully retrieved tasks by task group
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Task'
- *       400:
- *         description: Invalid task group ID
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       404:
- *         description: No tasks found for this task group
- *       500:
- *         description: Internal server error
- */
-router.get('/task-group/:taskGroupId', getTasksByTaskGroup);
-
-/**
- * @swagger
- * /api/masters/tasks/{id}:
- *   get:
- *     summary: Get task by ID
- *     description: Retrieve a specific task by its ID
- *     tags: [Tasks]
- *     parameters:
- *       - $ref: '#/components/parameters/taskId'
- *     responses:
- *       200:
- *         description: Successfully retrieved task
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
- *                 data:
- *                   $ref: '#/components/schemas/Task'
+ *                   $ref: '#/components/schemas/TaskType'
  *       400:
  *         description: Invalid ID parameter
  *         content:
@@ -469,7 +480,7 @@ router.get('/task-group/:taskGroupId', getTasksByTaskGroup);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       404:
- *         description: Task not found
+ *         description: Task type not found
  *         content:
  *           application/json:
  *             schema:
@@ -480,19 +491,20 @@ router.get('/task-group/:taskGroupId', getTasksByTaskGroup);
  *                   example: false
  *                 message:
  *                   type: string
- *                   example: "Task not found"
+ *                   example: "Task type not found"
  *       500:
  *         description: Internal server error
  */
-router.get('/:id', getTaskById);
+router.get('/:id', getTaskTypeById);
 
+// Protected endpoints (require authentication and authorization)
 /**
  * @swagger
- * /api/masters/tasks:
+ * /api/masters/taskType:
  *   post:
- *     summary: Create a new task
- *     description: Create a new task record
- *     tags: [Tasks]
+ *     summary: Create a new task type
+ *     description: Create a new task type record
+ *     tags: [TaskTypes]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -500,10 +512,10 @@ router.get('/:id', getTaskById);
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/TaskCreate'
+ *             $ref: '#/components/schemas/TaskTypeCreate'
  *     responses:
  *       201:
- *         description: Task created successfully
+ *         description: Task type created successfully
  *         content:
  *           application/json:
  *             schema:
@@ -514,7 +526,7 @@ router.get('/:id', getTaskById);
  *                 message:
  *                   type: string
  *                 data:
- *                   $ref: '#/components/schemas/Task'
+ *                   $ref: '#/components/schemas/TaskType'
  *       400:
  *         description: Validation error
  *         content:
@@ -526,36 +538,36 @@ router.get('/:id', getTaskById);
  *       403:
  *         description: Forbidden - Insufficient permissions
  *       409:
- *         description: Conflict - Task already exists in the group
+ *         description: Conflict - Task type with this name already exists
  *       500:
  *         description: Internal server error
  */
 router.post('/',
     authenticate,
     authorize([1, 2]),
-    createTask
+    createTaskType
 );
 
 /**
  * @swagger
- * /api/masters/tasks/{id}:
+ * /api/masters/taskType/{id}:
  *   put:
- *     summary: Update a task
- *     description: Update an existing task by ID
- *     tags: [Tasks]
+ *     summary: Update a task type
+ *     description: Update an existing task type by ID
+ *     tags: [TaskTypes]
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - $ref: '#/components/parameters/taskId'
+ *       - $ref: '#/components/parameters/taskTypeId'
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/TaskUpdate'
+ *             $ref: '#/components/schemas/TaskTypeUpdate'
  *     responses:
  *       200:
- *         description: Task updated successfully
+ *         description: Task type updated successfully
  *         content:
  *           application/json:
  *             schema:
@@ -566,7 +578,7 @@ router.post('/',
  *                 message:
  *                   type: string
  *                 data:
- *                   $ref: '#/components/schemas/Task'
+ *                   $ref: '#/components/schemas/TaskType'
  *       400:
  *         description: Validation error
  *         content:
@@ -578,32 +590,78 @@ router.post('/',
  *       403:
  *         description: Forbidden - Insufficient permissions
  *       404:
- *         description: Task not found
+ *         description: Task type not found
  *       409:
- *         description: Conflict - Task with this name already exists in the group
+ *         description: Conflict - Another task type with this name already exists
  *       500:
  *         description: Internal server error
  */
 router.put('/:id',
     authenticate,
     authorize([1, 2]),
-    updateTask
+    updateTaskType
 );
 
 /**
  * @swagger
- * /api/masters/tasks/{id}:
- *   delete:
- *     summary: Delete a task
- *     description: Delete a task by ID
- *     tags: [Tasks]
+ * /api/masters/taskType/{id}/restore:
+ *   patch:
+ *     summary: Restore a deleted task type
+ *     description: Restore a soft-deleted task type by ID
+ *     tags: [TaskTypes]
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - $ref: '#/components/parameters/taskId'
+ *       - $ref: '#/components/parameters/taskTypeId'
  *     responses:
  *       200:
- *         description: Task deleted successfully
+ *         description: Task type restored successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/TaskType'
+ *       400:
+ *         description: Invalid ID parameter
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Insufficient permissions
+ *       404:
+ *         description: Task type not found
+ *       500:
+ *         description: Internal server error
+ */
+router.patch('/:id/restore',
+    authenticate,
+    authorize([1]),
+    restoreTaskType
+);
+
+/**
+ * @swagger
+ * /api/masters/taskType/{id}:
+ *   delete:
+ *     summary: Delete a task type (soft delete)
+ *     description: Soft delete a task type by setting TT_Del_Flag = 1 and Status = 0
+ *     tags: [TaskTypes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/taskTypeId'
+ *     responses:
+ *       200:
+ *         description: Task type deleted successfully
  *         content:
  *           application/json:
  *             schema:
@@ -624,14 +682,58 @@ router.put('/:id',
  *       403:
  *         description: Forbidden - Insufficient permissions
  *       404:
- *         description: Task not found
+ *         description: Task type not found
  *       500:
  *         description: Internal server error
  */
 router.delete('/:id',
     authenticate,
     authorize([1]),
-    deleteTask
+    deleteTaskType
+);
+
+/**
+ * @swagger
+ * /api/masters/taskType/{id}/hard:
+ *   delete:
+ *     summary: Permanently delete a task type
+ *     description: Permanently delete a task type from the database (hard delete)
+ *     tags: [TaskTypes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/taskTypeId'
+ *     responses:
+ *       200:
+ *         description: Task type permanently deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Invalid ID parameter
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Insufficient permissions
+ *       404:
+ *         description: Task type not found
+ *       500:
+ *         description: Internal server error
+ */
+router.delete('/:id/hard',
+    authenticate,
+    authorize([1]),
+    hardDeleteTaskType
 );
 
 export default router;

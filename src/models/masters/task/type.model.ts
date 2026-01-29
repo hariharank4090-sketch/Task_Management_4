@@ -118,7 +118,7 @@ Task.init(
   },
   {
     sequelize,
-    tableName: 'tasks', // or your actual table name
+    tableName: 'tbl_Task',
     timestamps: false,
     hooks: {
       beforeUpdate: (task: Task) => {
