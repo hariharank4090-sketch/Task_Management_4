@@ -21,6 +21,7 @@ router.use('/parametDataTypes',taskParamTypeRoutes)
 router.use('/paramMaster',paramMasterRoutes)
 router.use('/dropdowns',dropdownRoutes)
 router.use('/tasks',taskRoutes)
+router.use('/company',taskRoutes)
 
 
 export default router;

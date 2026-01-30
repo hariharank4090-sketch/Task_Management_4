@@ -14,7 +14,7 @@ export interface TaskAttributes {
   Update_By?: number | null;
   Update_Date?: Date | null;
   Project_Id?: number | null;
-  Task_Type_Id?: number | null; // Add this if your model has Task_Type_Id
+  // Task_Type_Id?: number | null; // Add this if your model has Task_Type_Id
 }
 
 export type TaskCreationAttributes = Optional<TaskAttributes, 'Task_Id'>;
@@ -26,7 +26,7 @@ export const taskCreateSchema = z.object({
   Company_id: z.number().optional().nullable(),
   Task_Group_Id: z.number().min(1, 'Valid task group ID is required'),
   Project_Id: z.number().optional().nullable(),
-  Task_Type_Id: z.number().optional().nullable(), // Add this if needed
+  // Task_Type_Id: z.number().optional().nullable(), // Add this if needed
 });
 
 export const taskUpdateSchema = z.object({
@@ -35,7 +35,7 @@ export const taskUpdateSchema = z.object({
   Company_id: z.number().optional().nullable(),
   Task_Group_Id: z.number().min(1, 'Valid task group ID is required').optional(),
   Project_Id: z.number().optional().nullable(),
-  Task_Type_Id: z.number().optional().nullable(), // Add this if needed
+  // Task_Type_Id: z.number().optional().nullable(), // Add this if needed
 });
 
 export const taskIdSchema = z.object({
@@ -71,7 +71,7 @@ export class Task extends Model<TaskAttributes, TaskCreationAttributes>
   public Update_By!: number | null;
   public Update_Date!: Date | null;
   public Project_Id!: number | null;
-  public Task_Type_Id!: number | null; // Add this if your table has this column
+  // public Task_Type_Id!: number | null; // Add this if your table has this column
 }
 
 Task.init(
@@ -97,10 +97,10 @@ Task.init(
       type: DataTypes.INTEGER,
       allowNull: false
     },
-    Task_Type_Id: { // Add this if your table has this column
-      type: DataTypes.INTEGER,
-      allowNull: true
-    },
+    // Task_Type_Id: { // Add this if your table has this column
+    //   type: DataTypes.INTEGER,
+    //   allowNull: true
+    // },
     Entry_By: {
       type: DataTypes.INTEGER,
       allowNull: false,
