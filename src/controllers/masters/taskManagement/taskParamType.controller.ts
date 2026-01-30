@@ -47,13 +47,8 @@ const validateWithZod = <T>(schema: any, data: any): {
 
 export const getAllParametDataTypes = async (req: Request, res: Response) => {
     try {
-        const sortBy = req.query.sortBy as string || 'Para_Data_Type_Id';
-        const sortOrder = req.query.sortOrder as string || 'ASC';
-
         const queryData = {
-            ...req.query,
-            sortBy,
-            sortOrder
+            ...req.query
         };
 
         const validation = validateWithZod<ParametDataTypeQuery>(ParametDataTypeQuerySchema, queryData);
@@ -71,11 +66,6 @@ export const getAllParametDataTypes = async (req: Request, res: Response) => {
         // Build WHERE conditions
         const whereConditions: string[] = [];
         const queryParamsArray: any[] = [];
-        
-        if (queryParams.search) {
-            whereConditions.push(`(pd.Para_Data_Type LIKE ? OR pd.Para_Display_Name LIKE ?)`);
-            queryParamsArray.push(`%${queryParams.search}%`, `%${queryParams.search}%`);
-        }
 
         if (queryParams.Para_Data_Type) {
             whereConditions.push(`pd.Para_Data_Type LIKE ?`);
@@ -86,22 +76,6 @@ export const getAllParametDataTypes = async (req: Request, res: Response) => {
             ? `WHERE ${whereConditions.join(' AND ')}` 
             : '';
 
-        // Count total records
-        const countQuery = `
-            SELECT COUNT(*) as total 
-            FROM tbl_Paramet_Data_Type pd
-            ${whereClause}
-        `;
-        
-        const countResult = await sequelize.query(countQuery, {
-            replacements: queryParamsArray,
-            type: 'SELECT'
-        }) as any[];
-        
-        const totalRecords = countResult[0]?.total || 0;
-
-        // Get paginated data
-        const offset = (queryParams.page - 1) * queryParams.limit;
         const orderField = queryParams.sortBy || 'Para_Data_Type_Id';
         const orderDirection = queryParams.sortOrder || 'ASC';
 
@@ -113,24 +87,15 @@ export const getAllParametDataTypes = async (req: Request, res: Response) => {
             FROM tbl_Paramet_Data_Type pd
             ${whereClause}
             ORDER BY ${orderField} ${orderDirection}
-            LIMIT ? OFFSET ?
         `;
 
         const rows = await sequelize.query(dataQuery, {
-            replacements: [...queryParamsArray, queryParams.limit, offset],
+            replacements: queryParamsArray,
             type: 'SELECT'
         }) as any[];
 
-        const totalPages = Math.ceil(totalRecords / queryParams.limit);
-
-        return sentData(res, rows, {
-            totalRecords,
-            currentPage: queryParams.page,
-            totalPages,
-            pageSize: queryParams.limit,
-            hasNextPage: queryParams.page < totalPages,
-            hasPreviousPage: queryParams.page > 1
-        });
+        // Return all data without pagination metadata
+        return sentData(res, rows);
 
     } catch (err) {
         console.error('Error fetching parameter data types:', err);

@@ -36,7 +36,7 @@ export const ParametDataTypeCreationSchema = z.object({
 
 export const ParametDataTypeUpdateSchema = z.object({
     Para_Data_Type: z.string()
-        .max(250, 'Para_Data_Type cannot exceed 250 characters')  // Fixed error message
+        .max(250, 'Para_Data_Type cannot exceed 250 characters')  
         .trim()
         .optional(),
     Para_Display_Name: z.string()
@@ -45,18 +45,8 @@ export const ParametDataTypeUpdateSchema = z.object({
 });
 
 export const ParametDataTypeQuerySchema = z.object({
-    page: z.coerce.number()
-        .int()
-        .positive()
-        .default(1),
-    limit: z.coerce.number()
-        .int()
-        .min(1)
-        .max(100)
-        .default(20),
-    search: z.string().optional(),
-    Para_Data_Type: z.string().optional(),  
-    sortBy: z.enum(['Para_Data_Type', 'Para_Display_Name', 'Para_Data_Type_Id']) 
+    Para_Data_Type: z.string().optional(),
+    sortBy: z.enum(['Para_Data_Type_Id', 'Para_Data_Type', 'Para_Display_Name'])
         .default('Para_Data_Type_Id'),
     sortOrder: z.enum(['ASC', 'DESC'])
         .default('ASC')

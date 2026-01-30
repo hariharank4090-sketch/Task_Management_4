@@ -173,28 +173,6 @@ const router = express.Router();
  *           maximum: 1
  *           optional: true
  * 
- *     Pagination:
- *       type: object
- *       properties:
- *         totalRecords:
- *           type: integer
- *           example: 150
- *         currentPage:
- *           type: integer
- *           example: 1
- *         totalPages:
- *           type: integer
- *           example: 8
- *         pageSize:
- *           type: integer
- *           example: 20
- *         hasNextPage:
- *           type: boolean
- *           example: true
- *         hasPreviousPage:
- *           type: boolean
- *           example: false
- * 
  *     Error:
  *       type: object
  *       properties:
@@ -237,37 +215,6 @@ const router = express.Router();
  *         minimum: 1
  *       example: 1
  * 
- *     paginationPage:
- *       name: page
- *       in: query
- *       description: Page number
- *       required: false
- *       schema:
- *         type: integer
- *         minimum: 1
- *         default: 1
- *       example: 1
- * 
- *     paginationLimit:
- *       name: limit
- *       in: query
- *       description: Items per page (max 100)
- *       required: false
- *       schema:
- *         type: integer
- *         minimum: 1
- *         maximum: 100
- *         default: 20
- *       example: 20
- * 
- *     searchQuery:
- *       name: search
- *       in: query
- *       description: Search by task type name
- *       required: false
- *       schema:
- *         type: string
- * 
  *     projectIdQuery:
  *       name: projectId
  *       in: query
@@ -306,26 +253,6 @@ const router = express.Router();
  *         type: string
  *         enum: ['0', '1']
  * 
- *     sortByParam:
- *       name: sortBy
- *       in: query
- *       description: Sort field
- *       required: false
- *       schema:
- *         type: string
- *         enum: ["Task_Type_Id", "Task_Type", "Project_Id"]
- *         default: "Task_Type_Id"
- * 
- *     sortOrderParam:
- *       name: sortOrder
- *       in: query
- *       description: Sort order
- *       required: false
- *       schema:
- *         type: string
- *         enum: ["ASC", "DESC"]
- *         default: "ASC"
- * 
  *   securitySchemes:
  *     bearerAuth:
  *       type: http
@@ -334,6 +261,46 @@ const router = express.Router();
  */
 
 // Public endpoints (no authentication required)
+
+/**
+ * @swagger
+ * /api/masters/taskType:
+ *   get:
+ *     summary: Get all task types
+ *     description: Retrieve all task types with optional filtering
+ *     tags: [TaskTypes]
+ *     parameters:
+ *       - $ref: '#/components/parameters/projectIdQuery'
+ *       - $ref: '#/components/parameters/statusQuery'
+ *       - $ref: '#/components/parameters/ttDelFlagQuery'
+ *       - $ref: '#/components/parameters/isReptativeQuery'
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved task types
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/TaskType'
+ *       400:
+ *         description: Invalid query parameters
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/', getAllTaskTypes);
+
 /**
  * @swagger
  * /api/masters/taskType/active:
@@ -406,52 +373,6 @@ router.get('/project/:projectId', getTaskTypesByProjectId);
 
 /**
  * @swagger
- * /api/masters/taskType:
- *   get:
- *     summary: Get all task types with pagination and filtering
- *     description: Retrieve a paginated list of task types with optional filtering and search
- *     tags: [TaskTypes]
- *     parameters:
- *       - $ref: '#/components/parameters/paginationPage'
- *       - $ref: '#/components/parameters/paginationLimit'
- *       - $ref: '#/components/parameters/searchQuery'
- *       - $ref: '#/components/parameters/projectIdQuery'
- *       - $ref: '#/components/parameters/statusQuery'
- *       - $ref: '#/components/parameters/ttDelFlagQuery'
- *       - $ref: '#/components/parameters/isReptativeQuery'
- *       - $ref: '#/components/parameters/sortByParam'
- *       - $ref: '#/components/parameters/sortOrderParam'
- *     responses:
- *       200:
- *         description: Successfully retrieved task types
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/TaskType'
- *                 metadata:
- *                   $ref: '#/components/schemas/Pagination'
- *       400:
- *         description: Invalid query parameters
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       500:
- *         description: Internal server error
- */
-router.get('/', getAllTaskTypes);
-
-/**
- * @swagger
  * /api/masters/taskType/{id}:
  *   get:
  *     summary: Get task type by ID
@@ -498,6 +419,7 @@ router.get('/', getAllTaskTypes);
 router.get('/:id', getTaskTypeById);
 
 // Protected endpoints (require authentication and authorization)
+
 /**
  * @swagger
  * /api/masters/taskType:

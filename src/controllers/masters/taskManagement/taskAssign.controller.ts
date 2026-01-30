@@ -55,7 +55,6 @@ interface UpdateError {
   error: string;
 }
 
-// Bulk create controller
 export const createBulkTaskAssign = async (req: Request, res: Response) => {
   let transaction: Transaction | undefined;
   
@@ -208,7 +207,7 @@ export const updateBulkTaskAssign = async (req: Request, res: Response) => {
 
 
 
-// Bulk delete controller - FIXED VERSION
+
 export const deleteBulkTaskAssign = async (req: Request, res: Response) => {
   let transaction: Transaction | undefined;
   
@@ -287,12 +286,20 @@ export const deleteBulkTaskAssign = async (req: Request, res: Response) => {
 
 export const getAllTaskAssign = async (req: Request, res: Response) => {
   try {
-    const sortBy = (req.query.sortBy as string) || 'Id';
-    const sortOrder = (req.query.sortOrder as string) || 'ASC';
+
+    const queryToValidate: any = {};
+    
+    if (req.query.projectId) {
+      queryToValidate.projectId = req.query.projectId;
+    }
+    
+    if (req.query.userId) {
+      queryToValidate.userId = req.query.userId;
+    }
 
     const validation = validateWithZod<TaskAssignQueryParams>(
       taskAssignQuerySchema,
-      { ...req.query, sortBy, sortOrder }
+      queryToValidate  // Only pass the filtered params
     );
 
     if (!validation.success) {
@@ -301,7 +308,6 @@ export const getAllTaskAssign = async (req: Request, res: Response) => {
 
     const queryParams = validation.data!;
     
-    // Build WHERE conditions
     const whereConditions: string[] = [];
     const params: any[] = [];
     
@@ -319,11 +325,7 @@ export const getAllTaskAssign = async (req: Request, res: Response) => {
       ? `WHERE ${whereConditions.join(' AND ')}` 
       : '';
     
-    // Calculate pagination
-    const pageSize = queryParams.limit;
-    const offset = (queryParams.page - 1) * pageSize;
-    
-    // Main query - simple version
+    // Simple query without pagination
     const query = `
       SELECT 
         pe.Id,
@@ -336,29 +338,15 @@ export const getAllTaskAssign = async (req: Request, res: Response) => {
       LEFT JOIN tbl_Employee_Master em ON pe.User_Id = em.Emp_Id
       ${whereClause}
       ORDER BY pe.Id ASC
-      OFFSET ${offset} ROWS
-      FETCH NEXT ${pageSize} ROWS ONLY
     `;
     
-    // Count query
-    const countQuery = `
-      SELECT COUNT(*) as total
-      FROM tbl_Project_Employee pe
-      ${whereClause}
-    `;
-    
-    // Execute both queries
+    // Execute query
     const [rows] = await sequelize.query(query, {
       replacements: params
     });
     
-    const [countResult] = await sequelize.query(countQuery, {
-      replacements: params
-    });
-    
-    // Extract data - ensure rows is an array
+    // Extract data
     const dataRows = Array.isArray(rows) ? rows : [];
-    const totalRecords = countResult[0] || 0;
     
     // Format response
     const formattedData = dataRows.map((row: any) => ({

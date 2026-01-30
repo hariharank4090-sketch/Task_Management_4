@@ -67,13 +67,9 @@ const prepareTaskTypeData = (data: any) => {
 
 export const getAllTaskTypes = async (req: Request, res: Response) => {
     try {
-        const sortBy = req.query.sortBy as string || 'Task_Type_Id';
-        const sortOrder = req.query.sortOrder as string || 'ASC';
 
         const queryData = {
-            ...req.query,
-            sortBy,
-            sortOrder
+            ...req.query
         };
 
         const validation = validateWithZod<any>(taskTypeQuerySchema, queryData);
@@ -107,14 +103,13 @@ export const getAllTaskTypes = async (req: Request, res: Response) => {
             where.Is_Reptative = queryParams.isReptative === '1' ? 1 : 0;
         }
 
-        const orderField = queryParams.sortBy || 'Task_Type_Id';
-        const orderDirection = queryParams.sortOrder || 'ASC';
+
 
         const { rows, count } = await TaskType_Master.findAndCountAll({
             where,
             limit: queryParams.limit,
             offset: (queryParams.page - 1) * queryParams.limit,
-            order: [[orderField, orderDirection]]
+          
         });
 
        
@@ -169,16 +164,9 @@ export const getAllTaskTypes = async (req: Request, res: Response) => {
             };
         });
 
-        const totalPages = Math.ceil(count / queryParams.limit);
 
-        return sentData(res, formattedRows, {
-            totalRecords: count,
-            currentPage: queryParams.page,
-            totalPages,
-            pageSize: queryParams.limit,
-            hasNextPage: queryParams.page < totalPages,
-            hasPreviousPage: queryParams.page > 1
-        });
+
+        return sentData(res, formattedRows);
 
     } catch (err) {
         console.error('Error fetching task types:', err);

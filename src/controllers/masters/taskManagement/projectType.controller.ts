@@ -117,21 +117,14 @@ export const getAllProjects = async (req: Request, res: Response) => {
         const orderDirection = queryParams.sortOrder || 'ASC';
 
         const { rows, count } = await Project_Master.findAndCountAll({
-            where,
-            limit: queryParams.limit,
-            offset: (queryParams.page - 1) * queryParams.limit,
-            order: [[orderField, orderDirection]]
+            where
         });
 
-        const totalPages = Math.ceil(count / queryParams.limit);
+  
 
         return sentData(res, rows, {
-            totalRecords: count,
-            currentPage: queryParams.page,
-            totalPages,
-            pageSize: queryParams.limit,
-            hasNextPage: queryParams.page < totalPages,
-            hasPreviousPage: queryParams.page > 1
+            totalRecords: count
+        
         });
 
     } catch (err) {

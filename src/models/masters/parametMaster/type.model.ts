@@ -62,40 +62,31 @@ export const ParamMasterUpdateSchema = z.object({
         .optional()
 });
 
-// In paramMaster.model.ts, update the ParamMasterQuerySchema:
+// In your type.model.ts - CORRECTED
 export const ParamMasterQuerySchema = z.object({
-    page: z.coerce.number()
-        .int()
-        .positive()
-        .default(1),
-    limit: z.coerce.number()
-        .int()
-        .min(1)
-        .max(100)
-        .default(20),
-    search: z.string().optional(),
-    companyId: z.coerce.number()
-        .int()
-        .positive()
-        .optional(),
-    // Accept both old and new field names
-    sortBy: z.enum([
-        'Paramet_Id', 'Paramet_Name', 'Paramet_Data_Type', 'Company_id',
-        // Old field names for backward compatibility
-        'Para_Data_Type_Id', 'Para_Data_Type', 'Para_Display_Name'
-    ])
-    .transform((value) => {
-        // Map old field names to new ones
-        const fieldMap: Record<string, string> = {
-            'Para_Data_Type_Id': 'Paramet_Id',
-            'Para_Data_Type': 'Paramet_Name',
-            'Para_Display_Name': 'Paramet_Data_Type'
-        };
-        return fieldMap[value] || value;
-    })
+  page: z.coerce.number()
+    .int()
+    .positive('Page must be positive')
+    .default(1),
+  limit: z.coerce.number()
+    .int()
+    .min(1, 'Limit must be at least 1')
+    .max(100, 'Limit cannot exceed 100')
+    .default(20),
+  search: z.string().optional(),
+  companyId: z.coerce.number()
+    .int()
+    .positive('Company ID must be positive')
+    .optional(),
+  sortBy: z.enum([
+    'Paramet_Id',      // Valid columns from tbl_Paramet_Master
+    'Paramet_Name', 
+    'Paramet_Data_Type', 
+    'Company_id'
+  ])
     .default('Paramet_Id'),
-    sortOrder: z.enum(['ASC', 'DESC'])
-        .default('ASC')
+  sortOrder: z.enum(['ASC', 'DESC'])
+    .default('ASC')
 });
 
 export const paramMasterIdSchema = z.object({

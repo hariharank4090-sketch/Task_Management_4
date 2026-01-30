@@ -64,8 +64,7 @@ export const getAllTasks = async (req: Request, res: Response) => {
         }
 
         const {
-            page = 1,
-            limit = 20,
+        
             company_id,
             task_group_id,
             project_id,
@@ -74,9 +73,9 @@ export const getAllTasks = async (req: Request, res: Response) => {
             sortOrder = 'DESC'
         } = validation.data!;
 
-        const pageNum = Math.max(1, page);
-        const limitNum = Math.min(Math.max(1, limit), 100);
-        const offset = (pageNum - 1) * limitNum;
+        // const pageNum = Math.max(1, page);
+        // const limitNum = Math.min(Math.max(1, limit), 100);
+        // const offset = (pageNum - 1) * limitNum;
 
         // Build where clause
         const whereClause: any = {};
@@ -100,8 +99,8 @@ export const getAllTasks = async (req: Request, res: Response) => {
 
         const { count, rows: tasks } = await Task.findAndCountAll({
             where: whereClause,
-            limit: limitNum,
-            offset: offset,
+            // limit: limitNum,
+            // offset: offset,
             order: [[sortField, sortDirection]]
         });
 
@@ -111,11 +110,11 @@ export const getAllTasks = async (req: Request, res: Response) => {
             data: tasks,
             metadata: {
                 totalRecords: count,
-                currentPage: pageNum,
-                totalPages: Math.ceil(count / limitNum),
-                pageSize: limitNum,
-                hasNextPage: pageNum < Math.ceil(count / limitNum),
-                hasPreviousPage: pageNum > 1
+                // currentPage: pageNum,
+                // totalPages: Math.ceil(count / limitNum),
+                // pageSize: limitNum,
+                // hasNextPage: pageNum < Math.ceil(count / limitNum),
+                // hasPreviousPage: pageNum > 1
             }
         });
 

@@ -145,16 +145,6 @@ const router = express.Router();
  *       schema:
  *         type: string
  * 
- *     sortByParam:
- *       name: sortBy
- *       in: query
- *       description: Sort field
- *       required: false
- *       schema:
- *         type: string
- *         enum: ["Para_Data_Type_Id", "Para_Data_Type", "Para_Display_Name"]
- *         default: "Para_Data_Type_Id"
- * 
  *     sortOrderParam:
  *       name: sortOrder
  *       in: query

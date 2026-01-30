@@ -45,13 +45,8 @@ export const taskAssignUpdateSchema = z.object({
 
 
 export const taskAssignQuerySchema = z.object({
-  page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
-  search: z.string().optional(),
   projectId: z.coerce.number().int().positive().optional(),
-  userId: z.coerce.number().int().positive().optional(),
-  sortBy: z.enum(['Id', 'Project_Id', 'User_Id']).default('Id'),
-  sortOrder: z.enum(['ASC', 'DESC']).default('ASC')
+  userId: z.coerce.number().int().positive().optional()
 }).strict();
 
 

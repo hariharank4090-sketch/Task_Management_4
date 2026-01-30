@@ -49,14 +49,17 @@ const validateWithZod = <T>(schema: any, data: any): {
 
 export const getAllParamMasters = async (req: Request, res: Response) => {
     try {
-        const sortBy = req.query.sortBy as string || 'Paramet_Id';
-        const sortOrder = req.query.sortOrder as string || 'ASC';
-
-        const queryData = {
-            ...req.query,
-            sortBy,
-            sortOrder
-        };
+        // Filter out invalid sortBy before validation
+        const queryData: any = { ...req.query };
+        
+        // List of valid columns in tbl_Paramet_Master table
+        const validSortFields = ['Paramet_Id', 'Paramet_Name', 'Paramet_Data_Type', 'Company_id'];
+        
+        // If sortBy is invalid, remove it (will use default)
+        if (queryData.sortBy && !validSortFields.includes(queryData.sortBy as string)) {
+            console.warn(`Invalid sortBy parameter: ${queryData.sortBy}. Using default.`);
+            delete queryData.sortBy;
+        }
 
         const validation = validateWithZod<ParamMasterQuery>(ParamMasterQuerySchema, queryData);
 
@@ -70,43 +73,26 @@ export const getAllParamMasters = async (req: Request, res: Response) => {
 
         const queryParams = validation.data!;
 
-        // Build WHERE conditions
-        let whereConditions = '';
+        let whereConditions = 'WHERE Del_Flag = 0';
         let whereParams: any[] = [];
         
-        // Start with Del_Flag = 0 for active records
-        whereConditions = 'WHERE Del_Flag = 0';
-        
-        if (queryParams.search) {
-            whereConditions += ` AND (Paramet_Name LIKE ?)`;
-            whereParams.push(`%${queryParams.search}%`);
-        }
-
         if (queryParams.companyId) {
             whereConditions += ` AND Company_id = ?`;
             whereParams.push(queryParams.companyId);
         }
 
-        // Count total records
-        const countQuery = `
-            SELECT COUNT(*) as total 
-            FROM tbl_Paramet_Master
-            ${whereConditions}
-        `;
+        // Validate and set order field
+        const orderField = validSortFields.includes(queryParams.sortBy || '') 
+            ? queryParams.sortBy 
+            : 'Paramet_Id';
         
-        const countResult = await sequelize.query(countQuery, {
-            replacements: whereParams,
-            type: 'SELECT'
-        }) as any[];
-        
-        const totalRecords = countResult[0]?.total || 0;
-
-        // Get paginated data using SQL Server pagination
-        const offset = (queryParams.page - 1) * queryParams.limit;
-        const orderField = queryParams.sortBy || 'Paramet_Id';
         const orderDirection = queryParams.sortOrder || 'ASC';
 
-        // For SQL Server 2012+, use OFFSET-FETCH
+        // Make sure the ORDER BY field is safe
+        if (!validSortFields.includes(orderField)) {
+            throw new Error(`Invalid order field: ${orderField}`);
+        }
+
         const dataQuery = `
             SELECT 
                 Paramet_Id,
@@ -117,25 +103,16 @@ export const getAllParamMasters = async (req: Request, res: Response) => {
             FROM tbl_Paramet_Master
             ${whereConditions}
             ORDER BY ${orderField} ${orderDirection}
-            OFFSET ${offset} ROWS
-            FETCH NEXT ${queryParams.limit} ROWS ONLY
         `;
+
+      
 
         const rows = await sequelize.query(dataQuery, {
             replacements: whereParams,
             type: 'SELECT'
         }) as any[];
 
-        const totalPages = Math.ceil(totalRecords / queryParams.limit);
-
-        return sentData(res, rows, {
-            totalRecords,
-            currentPage: queryParams.page,
-            totalPages,
-            pageSize: queryParams.limit,
-            hasNextPage: queryParams.page < totalPages,
-            hasPreviousPage: queryParams.page > 1
-        });
+        return sentData(res, rows);
 
     } catch (err) {
         console.error('Error fetching parameter masters:', err);

@@ -54,25 +54,18 @@ export const getAllProcessMaster = async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, errors: validation.errors });
     }
 
-    const { page, limit, search, sortBy, sortOrder } = validation.data!;
+    const { sortBy, sortOrder } = validation.data!;
 
     const where: any = {};
-    if (search) {
-      where.Process_Name = { [Op.like]: `%${search}%` };
-    }
+ 
 
     const { rows, count } = await Process_Master.findAndCountAll({
       where,
-      limit,
-      offset: (page - 1) * limit,
+     
       order: [[sortBy, sortOrder]]
     });
 
-    return sentData(res, rows, {
-      totalRecords: count,
-      currentPage: page,
-      totalPages: Math.ceil(count / limit)
-    });
+    return sentData(res, rows);
 
   } catch (e) {
     console.error(e);
